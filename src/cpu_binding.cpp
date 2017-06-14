@@ -24,7 +24,10 @@ void hello(char *name)
 
 extern "C"
 {
-    extern int ctc_beam_search(THFloatTensor *probs) {
+    int ctc_beam_decode(THFloatTensor *probs, THIntTensor *seq_len, THIntTensor *output,
+                        THFloatTensor *scores, int num_classes, int beam_width,
+                        int batch_size, int merge_repeated)
+    {
       return 1;
     }
 }

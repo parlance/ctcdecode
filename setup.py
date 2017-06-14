@@ -3,30 +3,25 @@
 import os
 import sys
 
-from setuptools import setup, find_packages
+from distutils.core import setup
 from torch.utils.ffi import create_extension
 
-this_file = os.path.dirname(__file__)
-
-sources = ['ctc_decode/src/cpu_binding.cpp', 'ctc_decode/src/util/status.cpp']
-headers = ['ctc_decode/src/cpu_binding.h']
-defines = []
+sources = ['src/cpu_binding.cpp']
+headers = ['src/cpu_binding.h']
 
 ffi = create_extension(
     name='ctc_decode',
     language='c++',
     headers=headers,
     sources=sources,
-    define_macros=defines,
-    relative_to=__file__,
     with_cuda=False,
     extra_compile_args=['-std=c++11', '-fPIC']
 )
 ffi = ffi.distutils_extension()
-ffi.name = 'pytorch_ctc_decode._ctc_decode'
+ffi.name = 'pytorch_ctc._ctc_decode'
 
 setup(
-    name="pytorch_ctc_decode",
+    name="pytorch_ctc",
     version="0.1",
     description="CTC Decoder for PyTorch based on TensorFlow's implementation",
     url="https://github.com/ryanleary/pytorch-ctc-decode",
@@ -36,9 +31,7 @@ setup(
     install_requires=["cffi>=1.0.0"],
     setup_requires=["cffi>=1.0.0"],
     # Exclude the build files.
-    packages=find_packages(exclude=["build"]),
-    # Package where to put the extensions. Has to be a prefix of build.py.
-    ext_package="",
+    packages=["pytorch_ctc"],
     # Extensions to compile.
     ext_modules=[ffi]
 )

@@ -224,7 +224,8 @@ void CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Step(
   }
 
   // Extract the beams sorted in decreasing new probability
-  CHECK_EQ(num_classes_, input.size());
+  // TODO: Add the check back in
+  //CHECK_EQ(num_classes_, input.size());
 
   std::unique_ptr<std::vector<BeamEntry*>> branches(leaves_.Extract());
   leaves_.Reset();
