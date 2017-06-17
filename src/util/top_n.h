@@ -245,7 +245,8 @@ void TopN<T, Cmp>::PushInternal(U &&v, T *dropped) {  // NOLINT(build/c++11)
 
 template <class T, class Cmp>
 const T &TopN<T, Cmp>::peek_bottom() {
-  CHECK(!empty());
+  // TODO: replace check
+  //CHECK(!empty());
   if (state_ == UNORDERED) {
     // We need to do a linear scan to find out the bottom element
     int min_candidate = 0;
@@ -298,7 +299,8 @@ std::vector<T> *TopN<T, Cmp>::ExtractNondestructive() const {
 
 template <class T, class Cmp>
 void TopN<T, Cmp>::ExtractNondestructive(std::vector<T> *output) const {
-  CHECK(output);
+  // TODO: replace check
+  // CHECK(output);
   *output = elements_;
   if (state_ != HEAP_SORTED) {
     std::sort(output->begin(), output->end(), cmp_);
@@ -317,7 +319,8 @@ std::vector<T> *TopN<T, Cmp>::ExtractUnsortedNondestructive() const {
 
 template <class T, class Cmp>
 void TopN<T, Cmp>::ExtractUnsortedNondestructive(std::vector<T> *output) const {
-  CHECK(output);
+  // TODO: replace check
+  // CHECK(output);
   *output = elements_;
   if (state_ == HEAP_SORTED) {
     // Remove the limit_+1'th element.

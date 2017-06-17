@@ -61,7 +61,8 @@ struct BeamEntry {
   inline bool Active() const { return newp.total != kLogZero; }
   inline bool HasChildren() const { return !children.empty(); }
   void PopulateChildren(int L) {
-    CHECK(!HasChildren());
+    // TODO: REPLACE CHECK
+    // CHECK(!HasChildren());
     children = std::vector<BeamEntry>(L);
     int ci = 0;
     for (auto& c : children) {
@@ -73,11 +74,13 @@ struct BeamEntry {
     }
   }
   inline std::vector<BeamEntry>* Children() {
-    CHECK(HasChildren());
+    // TODO: REPLACE CHECK
+    //CHECK(HasChildren());
     return &children;
   }
   inline const std::vector<BeamEntry>* Children() const {
-    CHECK(HasChildren());
+    // TODO: REPLACE CHECK
+    //CHECK(HasChildren());
     return &children;
   }
   std::vector<int> LabelSeq(bool merge_repeated) const {

@@ -83,7 +83,9 @@ class CTCBeamSearchDecoder : public CTCDecoder {
       : CTCDecoder(num_classes, batch_size, merge_repeated),
         beam_width_(beam_width),
         leaves_(beam_width),
-        beam_scorer_(CHECK_NOTNULL(scorer)) {
+        // TODO: ADD CHECK_NOTNULL BACK
+        //beam_scorer_(CHECK_NOTNULL(scorer)) {
+        beam_scorer_(scorer) {
     Reset();
   }
 
