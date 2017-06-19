@@ -191,11 +191,15 @@ Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Decode(
       return status;
     }
 
-    // TODO: Add these checks back in
-    //CHECK_EQ(top_n, beam_log_probabilities.size());
-    //CHECK_EQ(beams.size(), beam_log_probabilities.size());
-    //std::cout << top_n << " == " << beam_log_probabilities.size() << std::endl;
-    //std::cout << beams.size() << " == " << beam_log_probabilities.size() << std::endl;
+    if (top_n != beam_log_probabilities.size()) {
+      return errors::FailedPrecondition(
+          "incorrect number of paths generated");
+    }
+    if (beams.size() != beam_log_probabilities.size()) {
+      return errors::FailedPrecondition(
+          "mismatch in beam result sizes"
+      );
+    }
 
     for (int i = 0; i < top_n; ++i) {
       // Copy output to the correct beam + batch
@@ -230,8 +234,9 @@ void CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Step(
   }
 
   // Extract the beams sorted in decreasing new probability
-  // TODO: Add the check back in
-  //CHECK_EQ(num_classes_, input.size());
+  if (num_classes_ != input.size()) {
+    return;
+  }
 
   std::unique_ptr<std::vector<BeamEntry*>> branches(leaves_.Extract());
   leaves_.Reset();
@@ -355,9 +360,14 @@ template <typename CTCBeamState, typename CTCBeamComparer>
 Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::TopPaths(
     int n, std::vector<std::vector<int>>* paths, std::vector<float>* log_probs,
     bool merge_repeated) const {
-  // TODO: Add these checks back in
-  // CHECK_NOTNULL(paths)->clear();
-  // CHECK_NOTNULL(log_probs)->clear();
+  if (paths == nullptr || log_probs == nullptr) {
+    return errors::FailedPrecondition(
+      "Internal paths are null"
+    );
+  } else {
+    paths->clear();
+    log_probs->clear();
+  }
   if (n > beam_width_) {
     return errors::InvalidArgument("requested more paths than the beam width.");
   }

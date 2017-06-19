@@ -67,6 +67,7 @@ namespace pytorch {
 
     namespace errors {
       Status InvalidArgument(string msg);
+      Status FailedPrecondition(string msg);
     }
   }
 }
