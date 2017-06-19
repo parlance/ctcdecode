@@ -22,9 +22,13 @@ namespace pytorch {
 
       Status(pytorch::ctc::Code code, string msg);
 
+      /// Copy the specified status.
+      Status(const Status& s);
+      void operator=(const Status& s);
+
       static Status OK() { return Status(); }
 
-      bool ok() const { return (state_ == nullptr); }
+      bool ok() const { return (state_ == NULL); }
 
       pytorch::ctc::Code code() const {
         return ok() ? pytorch::ctc::OK : state_->code;
@@ -33,6 +37,10 @@ namespace pytorch {
       const string& error_message() const {
         return ok() ? empty_string() : state_->msg;
       }
+
+    bool operator==(const Status& x) const;
+    bool operator!=(const Status& x) const;
+    string ToString() const;
 
     private:
       static const string& empty_string();
@@ -44,6 +52,18 @@ namespace pytorch {
       // a `State` structure containing the error code and message(s)
       State* state_;
     };
+
+    inline Status::Status(const Status& s)
+      : state_((s.state_ == NULL) ? NULL : new State(*s.state_)) {}
+
+    inline bool Status::operator==(const Status& x) const {
+      return (this->state_ == x.state_) || (ToString() == x.ToString());
+    }
+
+    inline bool Status::operator!=(const Status& x) const { return !(*this == x); }
+
+    /// @ingroup core
+    std::ostream& operator<<(std::ostream& os, const Status& x);
 
     namespace errors {
       Status InvalidArgument(string msg);

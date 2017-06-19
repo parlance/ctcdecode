@@ -183,8 +183,10 @@ Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Decode(
       leaves_.push(entry);
     }
 
+
     Status status =
         TopPaths(top_n, &beams, &beam_log_probabilities, merge_repeated_);
+
     if (!status.ok()) {
       return status;
     }
@@ -192,6 +194,8 @@ Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Decode(
     // TODO: Add these checks back in
     //CHECK_EQ(top_n, beam_log_probabilities.size());
     //CHECK_EQ(beams.size(), beam_log_probabilities.size());
+    //std::cout << top_n << " == " << beam_log_probabilities.size() << std::endl;
+    //std::cout << beams.size() << " == " << beam_log_probabilities.size() << std::endl;
 
     for (int i = 0; i < top_n; ++i) {
       // Copy output to the correct beam + batch
