@@ -11,7 +11,8 @@ namespace pytorch {
   extern "C"
   {
       int ctc_beam_decode(THFloatTensor *th_probs, THIntTensor *th_seq_len, THIntTensor *th_output,
-                          THFloatTensor *th_scores, int top_paths, int beam_width, int merge_repeated)
+                          THFloatTensor *th_scores, THIntTensor *th_out_len, int top_paths,
+                          int beam_width, int blank_index, int merge_repeated)
       {
         const int64_t max_time = THFloatTensor_size(th_probs, 0);
         const int64_t batch_size = THFloatTensor_size(th_probs, 1);
@@ -47,7 +48,7 @@ namespace pytorch {
 
         // initialize beam search class
         ctc::CTCBeamSearchDecoder<> beam_search(num_classes, beam_width, &beam_scorer,
-                                                batch_size, merge_repeated == 1);
+                                                batch_size, blank_index, merge_repeated == 1);
 
         ctc::Status stat = beam_search.Decode(seq_len, inputs, &outputs, &scores);
         if (!stat.ok()) {
@@ -63,13 +64,11 @@ namespace pytorch {
             int64_t num_decoded = p_batch.size();
 
             max_decoded = std::max(max_decoded, num_decoded);
+            THIntTensor_set2d(th_out_len, p, b, num_decoded);
             for (int64_t t=0; t < num_decoded; ++t) {
               // TODO: this could be more efficient (significant pointer arithmetic every time currently)
               THIntTensor_set3d(th_output, p, b, t, p_batch[t]);
               THFloatTensor_set2d(th_scores, p, b, scores(b, p));
-            }
-            for (int64_t t = num_decoded; t < max_time; ++t) {
-              THIntTensor_set3d(th_output, p, b, t, -1);
             }
           }
         }

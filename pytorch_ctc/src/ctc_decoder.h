@@ -34,9 +34,9 @@ class CTCDecoder {
   typedef std::vector<std::vector<int>> Output;
   typedef Eigen::Map<Eigen::MatrixXf> ScoreOutput;
 
-  CTCDecoder(int num_classes, int batch_size, bool merge_repeated)
+  CTCDecoder(int num_classes, int batch_size, int blank_index, bool merge_repeated)
       : num_classes_(num_classes),
-        blank_index_(num_classes - 1),
+        blank_index_(blank_index),
         batch_size_(batch_size),
         merge_repeated_(merge_repeated) {}
 
@@ -65,8 +65,8 @@ class CTCDecoder {
 // algorithm, selecting at each timestep the most likely class at each timestep.
 class CTCGreedyDecoder : public CTCDecoder {
  public:
-  CTCGreedyDecoder(int num_classes, int batch_size, bool merge_repeated)
-      : CTCDecoder(num_classes, batch_size, merge_repeated) {}
+  CTCGreedyDecoder(int num_classes, int batch_size, int blank_index, bool merge_repeated)
+      : CTCDecoder(num_classes, batch_size, blank_index, merge_repeated) {}
 
   Status Decode(const CTCDecoder::SequenceLength& seq_len,
                 const std::vector<CTCDecoder::Input>& input,

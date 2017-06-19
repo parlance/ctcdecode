@@ -79,8 +79,8 @@ class CTCBeamSearchDecoder : public CTCDecoder {
   // standard beam search.
   CTCBeamSearchDecoder(int num_classes, int beam_width,
                        BaseBeamScorer<CTCBeamState>* scorer, int batch_size = 1,
-                       bool merge_repeated = false)
-      : CTCDecoder(num_classes, batch_size, merge_repeated),
+                       int blank_index = 0, bool merge_repeated = false)
+      : CTCDecoder(num_classes, batch_size, blank_index, merge_repeated),
         beam_width_(beam_width),
         leaves_(beam_width),
         // TODO: ADD CHECK_NOTNULL BACK
@@ -296,7 +296,7 @@ void CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Step(
     }
 
     if (!b->HasChildren()) {
-      b->PopulateChildren(num_classes_ - 1);
+      b->PopulateChildren(num_classes_);
     }
 
     for (BeamEntry& c : *b->Children()) {
@@ -345,7 +345,7 @@ void CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Reset() {
 
   // This beam root, and all of its children, will be in memory until
   // the next reset.
-  beam_root_.reset(new BeamEntry(nullptr, -1, num_classes_ - 1, -1));
+  beam_root_.reset(new BeamEntry(nullptr, -1, num_classes_, -1));
   beam_root_->newp.total = 0.0;  // ln(1)
   beam_root_->newp.blank = 0.0;  // ln(1)
 
