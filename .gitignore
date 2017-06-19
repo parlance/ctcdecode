@@ -1,6 +1,5 @@
 build
 _ext
-pytorch_ctc
 *.pyc
 
 # Byte-compiled / optimized / DLL files

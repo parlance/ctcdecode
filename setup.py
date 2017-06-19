@@ -6,11 +6,12 @@ import sys
 from distutils.core import setup
 from torch.utils.ffi import create_extension
 
-sources = ['src/cpu_binding.cpp', 'src/util/status.cpp']
-headers = ['src/cpu_binding.h']
+sources = ['pytorch_ctc/src/cpu_binding.cpp', 'pytorch_ctc/src/util/status.cpp']
+headers = ['pytorch_ctc/src/cpu_binding.h']
 
 ffi = create_extension(
-    name='ctc_decode',
+    name='pytorch_ctc._ext.ctc_decode',
+    package=True,
     language='c++',
     headers=headers,
     sources=sources,
@@ -18,7 +19,6 @@ ffi = create_extension(
     extra_compile_args=['-std=c++11', '-fPIC', '-w']
 )
 ffi = ffi.distutils_extension()
-ffi.name = 'pytorch_ctc._ctc_decode'
 
 setup(
     name="pytorch_ctc",
