@@ -30,7 +30,7 @@ namespace ctc {
 class CTCDecoder {
  public:
   typedef Eigen::Map<const Eigen::ArrayXi> SequenceLength;
-  typedef Eigen::Map<const Eigen::MatrixXf> Input;
+  typedef Eigen::Map<Eigen::MatrixXf, 0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic> > Input;
   typedef std::vector<std::vector<int>> Output;
   typedef Eigen::Map<Eigen::MatrixXf> ScoreOutput;
 
@@ -48,7 +48,7 @@ class CTCDecoder {
   //  - output.size() specifies the number of beams to be returned.
   //  - scores(b, i) - b = 0 to batch_size; i = 0 to output.size()
   virtual Status Decode(const SequenceLength& seq_len,
-                        const std::vector<Input>& input,
+                        std::vector<Input>& input,
                         std::vector<Output>* output, ScoreOutput* scores) = 0;
 
   int batch_size() { return batch_size_; }
@@ -69,7 +69,7 @@ class CTCGreedyDecoder : public CTCDecoder {
       : CTCDecoder(num_classes, batch_size, blank_index, merge_repeated) {}
 
   Status Decode(const CTCDecoder::SequenceLength& seq_len,
-                const std::vector<CTCDecoder::Input>& input,
+                std::vector<CTCDecoder::Input>& input,
                 std::vector<CTCDecoder::Output>* output,
                 CTCDecoder::ScoreOutput* scores) override {
     if (output->empty() || (*output)[0].size() < batch_size_) {

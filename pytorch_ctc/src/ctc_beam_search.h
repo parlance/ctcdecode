@@ -93,7 +93,7 @@ class CTCBeamSearchDecoder : public CTCDecoder {
 
   // Run the hibernating beam search algorithm on the given input.
   Status Decode(const CTCDecoder::SequenceLength& seq_len,
-                const std::vector<CTCDecoder::Input>& input,
+                std::vector<CTCDecoder::Input>& input,
                 std::vector<CTCDecoder::Output>* output,
                 CTCDecoder::ScoreOutput* scores) override;
 
@@ -145,7 +145,7 @@ class CTCBeamSearchDecoder : public CTCDecoder {
 template <typename CTCBeamState, typename CTCBeamComparer>
 Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Decode(
     const CTCDecoder::SequenceLength& seq_len,
-    const std::vector<CTCDecoder::Input>& input,
+    std::vector<CTCDecoder::Input>& input,
     std::vector<CTCDecoder::Output>* output, ScoreOutput* scores) {
   // Storage for top paths.
   std::vector<std::vector<int>> beams;

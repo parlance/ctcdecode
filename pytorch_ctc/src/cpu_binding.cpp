@@ -28,9 +28,11 @@ namespace pytorch {
         float* probs_ptr = THFloatTensor_data(th_probs);
         ptrdiff_t probs_offset = THFloatTensor_storageOffset(th_probs);
         const int64_t probs_stride_0 = THFloatTensor_stride(th_probs, 0);
-        std::vector<Eigen::Map<const Eigen::MatrixXf>> inputs;
+        const int64_t probs_stride_1 = THFloatTensor_stride(th_probs, 1);
+        const int64_t probs_stride_2 = THFloatTensor_stride(th_probs, 2);
+        std::vector<Eigen::Map<Eigen::MatrixXf, 0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>> inputs;
         for (int t=0; t < max_time; ++t) {
-          inputs.emplace_back(probs_ptr + probs_offset + (t*probs_stride_0), batch_size, num_classes);
+          inputs.emplace_back(probs_ptr + probs_offset + (t*probs_stride_0), batch_size, num_classes, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(probs_stride_2, probs_stride_1));
         }
 
         // prepare/initialize output variables
