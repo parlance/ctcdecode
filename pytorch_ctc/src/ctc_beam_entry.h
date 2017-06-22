@@ -16,7 +16,7 @@ limitations under the License.
 #include <algorithm>
 #include <vector>
 
-#include "third_party/eigen3/Eigen/Core"
+#include "Eigen/Core"
 //#include "tensorflow/core/platform/logging.h"
 //#include "tensorflow/core/platform/macros.h"
 //#include "tensorflow/core/platform/types.h"

@@ -16,7 +16,7 @@ limitations under the License.
 #include <cmath>
 #include <memory>
 
-#include "third_party/eigen3/Eigen/Core"
+#include "Eigen/Core"
 //#include "tensorflow/core/lib/core/errors.h"
 #include "util/top_n.h"
 //#include "tensorflow/core/platform/logging.h"

@@ -13,7 +13,7 @@ limitations under the License.
 #ifndef PYTORCH_CONTRIB_CTC_CTC_DECODER_H_
 #define PYTORCH_CONTRIB_CTC_CTC_DECODER_H_
 
-#include "third_party/eigen3/Eigen/Core"
+#include "Eigen/Core"
 #include "util/status.h"
 //#include "tensorflow/core/lib/core/errors.h"
 //#include "tensorflow/core/lib/core/status.h"

@@ -15,6 +15,7 @@ ffi = create_extension(
     language='c++',
     headers=headers,
     sources=sources,
+    include_dirs=["third_party/eigen3"],
     with_cuda=False,
     extra_compile_args=['-std=c++11', '-fPIC', '-w']
 )
