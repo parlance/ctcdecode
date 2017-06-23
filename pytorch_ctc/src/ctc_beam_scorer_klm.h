@@ -55,7 +55,8 @@ namespace ctc_beam_search {
     }
     KenLMBeamScorer(Labels *labels, const char *kenlm_path, const char *trie_path)
                       : lm_weight(1.0f),
-                        word_count_weight(0.0f) {
+                        word_count_weight(0.0f),
+                        valid_word_count_weight(1.0f) {
       lm::ngram::Config config;
       config.load_method = util::POPULATE_OR_READ;
       model = new Model(kenlm_path, config);

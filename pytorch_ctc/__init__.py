@@ -35,9 +35,11 @@ def beam_decode(probs, labels, seq_len=None, top_paths=1, beam_width=10, blank_i
     out_seq_len = torch.IntTensor(top_paths, batch_size)
 
     merge_int = 1 if merge_repeated else 0
+    scorer = _lib.get_kenlm_scorer(labels, len(labels), space_index, blank_index, lm_path.encode(), trie_path.encode())
+    print(scorer)
     result = ctc.ctc_beam_decode(probs, seq_len, output, scores, out_seq_len,
                                  top_paths, beam_width, blank_index, merge_int,
-                                 labels, len(labels), space_index, lm_path.encode(), trie_path.encode())
+                                 scorer)
 
     return output, scores, out_seq_len
 

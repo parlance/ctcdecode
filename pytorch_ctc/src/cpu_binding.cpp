@@ -69,10 +69,20 @@ namespace pytorch {
 
   extern "C"
   {
+    void* get_kenlm_scorer(const wchar_t* label_str, int labels_size, int space_index, int blank_index,
+                           const char* lm_path, const char* trie_path) {
+
+      Labels labels(label_str, labels_size, blank_index, space_index);
+      ctc::KenLMBeamScorer *beam_scorer = new ctc::KenLMBeamScorer(&labels, lm_path, trie_path);
+      void* ptr = static_cast<void*>(beam_scorer);
+      std::cout << "kenlm addr (out): " << beam_scorer << ptr << std::endl;
+      return ptr;
+    }
+
     int ctc_beam_decode(THFloatTensor *th_probs, THIntTensor *th_seq_len, THIntTensor *th_output,
                         THFloatTensor *th_scores, THIntTensor *th_out_len, int top_paths,
                         int beam_width, int blank_index, int merge_repeated,
-                        const wchar_t* label_str, int labels_size, int space_index, const char* lm_path, const char* trie_path)
+                        void* scorer)
     {
       const int64_t max_time = THFloatTensor_size(th_probs, 0);
       const int64_t batch_size = THFloatTensor_size(th_probs, 1);
@@ -107,18 +117,23 @@ namespace pytorch {
 
 
       // set up scorer and decoder
-      Labels labels(label_str, labels_size, blank_index, space_index);
-      ctc::KenLMBeamScorer beam_scorer(&labels, lm_path, trie_path);
-      ctc::CTCBeamSearchDecoder<KenLMBeamState> beam_search(num_classes, beam_width, &beam_scorer,
+      // Labels labels(label_str, labels_size, blank_index, space_index);
+      // ctc::KenLMBeamScorer beam_scorer(&labels, lm_path, trie_path);
+      std::cout << "Pre cast" << std::endl;
+      ctc::KenLMBeamScorer* beam_scorer = static_cast<KenLMBeamScorer*>(scorer);
+        std::cout << "kenlm addr (in): " << scorer <<beam_scorer << std::endl;
+      std::cout << "post cast" << std::endl;
+      ctc::CTCBeamSearchDecoder<KenLMBeamState> beam_search(num_classes, beam_width, beam_scorer,
                                               batch_size, blank_index, merge_repeated == 1);
       // ctc::CTCBeamSearchDecoder<>::DefaultBeamScorer beam_scorer;
       // ctc::CTCBeamSearchDecoder<> beam_search(num_classes, beam_width, &beam_scorer,
       //                                         batch_size, blank_index, merge_repeated == 1);
-
+      std::cout << "Post beam search init" << std::endl;
       ctc::Status stat = beam_search.Decode(seq_len, inputs, &outputs, &scores);
       if (!stat.ok()) {
         return 0;
       }
+      std::cout << "post decode" << std::endl;
       std::vector<float> log_probs;
 
       for (int p=0; p < top_paths; ++p) {
