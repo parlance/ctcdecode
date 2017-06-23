@@ -1,0 +1,3 @@
+[submodule "pytorch_ctc/src/third_party/kenlm"]
+	path = third_party/kenlm
+	url = https://github.com/kpu/kenlm.git

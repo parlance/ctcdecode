@@ -16,7 +16,7 @@ def _import_symbols(locals):
 _import_symbols(locals())
 
 
-def beam_decode(probs, seq_len=None, top_paths=1, beam_width=10, blank_index=0, merge_repeated=True):
+def beam_decode(probs, labels, seq_len=None, top_paths=1, beam_width=10, blank_index=0, space_index=28, merge_repeated=True, lm_path="", trie_path=""):
     prob_size = probs.size()
     max_seq_len = prob_size[0]
     batch_size = prob_size[1]
@@ -35,6 +35,14 @@ def beam_decode(probs, seq_len=None, top_paths=1, beam_width=10, blank_index=0, 
     out_seq_len = torch.IntTensor(top_paths, batch_size)
 
     merge_int = 1 if merge_repeated else 0
-    result = ctc.ctc_beam_decode(probs, seq_len, output, scores, out_seq_len, top_paths, beam_width, blank_index, merge_int)
+    result = ctc.ctc_beam_decode(probs, seq_len, output, scores, out_seq_len,
+                                 top_paths, beam_width, blank_index, merge_int,
+                                 labels, len(labels), space_index, lm_path.encode(), trie_path.encode())
 
     return output, scores, out_seq_len
+
+def generate_lm_trie(dictionary_path, kenlm_path, output_path, labels, blank_index=0, space_index=28):
+    result = _lib.generate_lm_trie(labels, len(labels), blank_index, space_index, kenlm_path.encode(), dictionary_path.encode(), output_path.encode())
+
+    if result != 0:
+        raise ValueError("Error encountered generating trie")
