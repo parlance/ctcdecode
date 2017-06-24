@@ -26,7 +26,7 @@ else:
     lib_ext = ".dylib"
 
 ctc_sources = ['pytorch_ctc/src/cpu_binding.cpp', 'pytorch_ctc/src/util/status.cpp']
-ctc_headers = ['pytorch_ctc/src/cpu_binding.h']
+ctc_headers = ['pytorch_ctc/src/cpu_binding.h',]
 
 ffi = create_extension(
     name='ctc_decode',

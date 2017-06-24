@@ -9,8 +9,9 @@ __all__ = []
 def _import_symbols(locals):
     for symbol in dir(_lib):
         fn = getattr(_lib, symbol)
-        locals[symbol] = _wrap_function(fn, _ffi)
-        __all__.append(symbol)
+        new_symbol = "_" + symbol
+        locals[new_symbol] = _wrap_function(fn, _ffi)
+        __all__.append(new_symbol)
 
 
 _import_symbols(locals())
@@ -35,11 +36,10 @@ def beam_decode(probs, labels, seq_len=None, top_paths=1, beam_width=10, blank_i
     out_seq_len = torch.IntTensor(top_paths, batch_size)
 
     merge_int = 1 if merge_repeated else 0
-    scorer = _lib.get_kenlm_scorer(labels, len(labels), space_index, blank_index, lm_path.encode(), trie_path.encode())
+    scorer = ctc._get_kenlm_scorer(labels, len(labels), space_index, blank_index, lm_path.encode(), trie_path.encode())
+    decoder = ctc._get_ctc_beam_decoder(num_classes, batch_size, top_paths, beam_width, blank_index, merge_int, scorer, 1)
     print(scorer)
-    result = ctc.ctc_beam_decode(probs, seq_len, output, scores, out_seq_len,
-                                 top_paths, beam_width, blank_index, merge_int,
-                                 scorer)
+    result = ctc._ctc_beam_decode(probs, seq_len, output, scores, out_seq_len, decoder, 1)
 
     return output, scores, out_seq_len
 

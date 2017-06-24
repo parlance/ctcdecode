@@ -112,6 +112,8 @@ class CTCBeamSearchDecoder : public CTCDecoder {
     label_selection_margin_ = label_selection_margin;
   }
 
+  int GetBeamWidth() const { return beam_width_; }
+
   // Reset the beam search
   void Reset();
 
