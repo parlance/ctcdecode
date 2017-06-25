@@ -78,33 +78,48 @@ namespace pytorch {
       return static_cast<void*>(beam_scorer);
     }
 
+    void set_kenlm_scorer_lm_weight(void *scorer, float weight) {
+      ctc::KenLMBeamScorer *beam_scorer = static_cast<ctc::KenLMBeamScorer *>(scorer);
+      beam_scorer->SetLMWeight(weight);
+    }
+
+    void set_kenlm_scorer_wc_weight(void *scorer, float weight) {
+      ctc::KenLMBeamScorer *beam_scorer = static_cast<ctc::KenLMBeamScorer *>(scorer);
+      beam_scorer->SetWordCountWeight(weight);
+    }
+
+    void set_kenlm_scorer_vwc_weight(void *scorer, float weight) {
+      ctc::KenLMBeamScorer *beam_scorer = static_cast<ctc::KenLMBeamScorer *>(scorer);
+      beam_scorer->SetValidWordCountWeight(weight);
+    }
+
     void* get_base_scorer() {
       ctc::CTCBeamSearchDecoder<>::DefaultBeamScorer *beam_scorer = new ctc::CTCBeamSearchDecoder<>::DefaultBeamScorer();
       return static_cast<void *>(beam_scorer);
     }
 
-    void* get_ctc_beam_decoder(int num_classes, int batch_size, int top_paths, int beam_width, int blank_index, int merge_repeated, void *scorer, DecodeType type) {
+    void* get_ctc_beam_decoder(int num_classes, int top_paths, int beam_width, int blank_index, int merge_repeated, void *scorer, DecodeType type) {
       switch (type) {
         case CTC:
           {
             ctc::CTCBeamSearchDecoder<>::DefaultBeamScorer *beam_scorer = static_cast<ctc::CTCBeamSearchDecoder<>::DefaultBeamScorer *>(scorer);
             ctc::CTCBeamSearchDecoder<> *decoder = new ctc::CTCBeamSearchDecoder<>
-                (num_classes, beam_width, beam_scorer, batch_size, blank_index, merge_repeated == 1);
+                (num_classes, beam_width, beam_scorer, blank_index, merge_repeated == 1);
             return static_cast<void *>(decoder);
           }
         case CTC_KENLM:
         {
           ctc::KenLMBeamScorer *beam_scorer = static_cast<ctc::KenLMBeamScorer*>(scorer);
           ctc::CTCBeamSearchDecoder<KenLMBeamState> *decoder = new ctc::CTCBeamSearchDecoder<KenLMBeamState>
-              (num_classes, beam_width, beam_scorer, batch_size, blank_index, merge_repeated == 1);
+              (num_classes, beam_width, beam_scorer, blank_index, merge_repeated == 1);
           return static_cast<void *>(decoder);
         }
       }
       return nullptr;
     }
 
-    int ctc_beam_decode(THFloatTensor *th_probs, THIntTensor *th_seq_len, THIntTensor *th_output,
-                        THFloatTensor *th_scores, THIntTensor *th_out_len, void *void_decoder, DecodeType type)
+    int ctc_beam_decode(void *void_decoder, DecodeType type, THFloatTensor *th_probs, THIntTensor *th_seq_len, THIntTensor *th_output,
+                        THFloatTensor *th_scores, THIntTensor *th_out_len)
     {
       const int64_t max_time = THFloatTensor_size(th_probs, 0);
       const int64_t batch_size = THFloatTensor_size(th_probs, 1);
