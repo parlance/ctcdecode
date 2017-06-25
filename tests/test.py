@@ -26,7 +26,7 @@ class CTCDecodeTests(unittest.TestCase):
         aa = torch.FloatTensor(np.array([[[0.0, 1.0]], [[0.0, 1.0]], [[1.0, 0.0]], [[0.0, 1.0]], [[0.0, 1.0]]], dtype=np.float32)).log()
         seq_len = torch.IntTensor(np.array([5], dtype=np.int32))
 
-        labels="A_"
+        labels="_A"
         scorer = pytorch_ctc.Scorer()
         decoder_merge = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=0, space_index=-1, top_paths=1, beam_width=1, merge_repeated=True)
         decoder_nomerge = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=0, space_index=-1, top_paths=1, beam_width=1, merge_repeated=False)
@@ -82,7 +82,7 @@ class CTCDecodeTests(unittest.TestCase):
         self.assertEqual(decode_result.numpy()[1,0,:decode_len[1][0]].tolist(), [0, 1, 0])
         np.testing.assert_almost_equal(scores.numpy(), np.array([[-0.584855], [-0.389139]]), 5)
 
-    def test_ctc_decoder_beam_search_different_blank_ids(self):
+    def test_ctc_decoder_beam_search_different_blank_idx(self):
         depth = 6
         seq_len_0 = 5
         input_prob_matrix_0 = np.asarray(
@@ -112,7 +112,7 @@ class CTCDecodeTests(unittest.TestCase):
         th_input = torch.from_numpy(inputs)
         th_seq_len = torch.IntTensor(seq_lens)
 
-        labels="ABCDE_"
+        labels="_ABCDE"
         scorer = pytorch_ctc.Scorer()
         decoder = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=0, space_index=-1, top_paths=2, beam_width=2, merge_repeated=False)
 

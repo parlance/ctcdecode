@@ -65,13 +65,16 @@ struct BeamEntry {
       return;
     }
     children = std::vector<BeamEntry>(L-1);
-    for (int ci = 0; ci < L; ++ci) {
-      if (ci == blank) continue;
+    for (int ci=0,cl=0; ci < L; ++ci) {
+      if (ci == blank) {
+        continue;
+      }
       // The current object cannot be copied, and should not be moved.
       // Otherwise the child's parent will become invalid.
-      auto& c = children[ci];
+      auto& c = children[cl];
       c.parent = this;
       c.label = ci;
+      ++cl;
     }
   }
   inline std::vector<BeamEntry>* Children() {
