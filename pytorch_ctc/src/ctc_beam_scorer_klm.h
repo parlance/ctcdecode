@@ -85,6 +85,7 @@ namespace ctc_beam_search {
                              KenLMBeamState* to_state, int to_label) const {
       CopyState(from_state, to_state);
 
+      //if (!labels->IsSpace(to_label) && !labels->IsBlank(to_label)) {
       if (!labels->IsSpace(to_label)) {
         to_state->incomplete_word += labels->GetCharacter(to_label);
         TrieNode *trie_node = from_state.incomplete_word_trie_node;
@@ -194,6 +195,7 @@ namespace ctc_beam_search {
       std::string encoded_word;
       utf8::utf16to8(word.begin(), word.end(), std::back_inserter(encoded_word));
       auto &vocabulary = model->GetVocabulary();
+      std::cout << "Looking up: " << encoded_word << std::endl;
       return vocabulary.Index(encoded_word) == vocabulary.NotFound();
     }
 
