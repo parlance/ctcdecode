@@ -10,8 +10,13 @@ class CTCDecodeTests(unittest.TestCase):
         aa = torch.FloatTensor(np.array([[[1.0, 0.0]], [[1.0, 0.0]], [[0.0, 1.0]], [[1.0, 0.0]], [[1.0, 0.0]]], dtype=np.float32)).log()
         seq_len = torch.IntTensor(np.array([5], dtype=np.int32))
 
-        result_merge, _, result_merge_len = pytorch_ctc.beam_decode(aa, seq_len, blank_index=1, merge_repeated=True)
-        result_nomerge, _, result_nomerge_len = pytorch_ctc.beam_decode(aa, seq_len, blank_index=1, merge_repeated=False)
+        labels="A_"
+        scorer = pytorch_ctc.Scorer()
+        decoder_merge = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=1, space_index=-1, top_paths=1, beam_width=1, merge_repeated=True)
+        decoder_nomerge = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=1, space_index=-1, top_paths=1, beam_width=1, merge_repeated=False)
+
+        result_merge, _, result_merge_len = decoder_merge.decode(aa, seq_len)
+        result_nomerge, _, result_nomerge_len = decoder_nomerge.decode(aa, seq_len)
         self.assertEqual(result_merge_len[0][0], 1)
         self.assertEqual(result_nomerge_len[0][0], 2)
         self.assertEqual(result_merge.numpy()[0,0,:result_merge_len[0][0]].tolist(), [0])
@@ -21,8 +26,13 @@ class CTCDecodeTests(unittest.TestCase):
         aa = torch.FloatTensor(np.array([[[0.0, 1.0]], [[0.0, 1.0]], [[1.0, 0.0]], [[0.0, 1.0]], [[0.0, 1.0]]], dtype=np.float32)).log()
         seq_len = torch.IntTensor(np.array([5], dtype=np.int32))
 
-        result_merge, _, result_merge_len = pytorch_ctc.beam_decode(aa, seq_len, blank_index=0, merge_repeated=True)
-        result_nomerge, _, result_nomerge_len = pytorch_ctc.beam_decode(aa, seq_len, blank_index=0, merge_repeated=False)
+        labels="A_"
+        scorer = pytorch_ctc.Scorer()
+        decoder_merge = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=0, space_index=-1, top_paths=1, beam_width=1, merge_repeated=True)
+        decoder_nomerge = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=0, space_index=-1, top_paths=1, beam_width=1, merge_repeated=False)
+
+        result_merge, _, result_merge_len = decoder_merge.decode(aa, seq_len)
+        result_nomerge, _, result_nomerge_len = decoder_nomerge.decode(aa, seq_len)
 
         self.assertEqual(result_merge_len[0][0], 1)
         self.assertEqual(result_nomerge_len[0][0], 2)
@@ -59,7 +69,11 @@ class CTCDecodeTests(unittest.TestCase):
         th_input = torch.from_numpy(inputs)
         th_seq_len = torch.IntTensor(seq_lens)
 
-        decode_result, scores, decode_len = pytorch_ctc.beam_decode(th_input, th_seq_len, beam_width=2, top_paths=2, blank_index=5, merge_repeated=False)
+        labels="ABCDE_"
+        scorer = pytorch_ctc.Scorer()
+        decoder = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=5, space_index=-1, top_paths=2, beam_width=2, merge_repeated=False)
+
+        decode_result, scores, decode_len = decoder.decode(th_input, th_seq_len)
 
         #self.assertEqual(result_merge.numpy()[0,0,:result_len[0][0]].tolist(), [1])
         self.assertEqual(decode_len[0][0], 2)
