@@ -78,9 +78,9 @@ class CTCBeamSearchDecoder : public CTCDecoder {
   // implementation, CTCBeamSearchDecoder<>::DefaultBeamScorer, generates the
   // standard beam search.
   CTCBeamSearchDecoder(int num_classes, int beam_width,
-                       BaseBeamScorer<CTCBeamState>* scorer, int batch_size = 1,
+                       BaseBeamScorer<CTCBeamState>* scorer,
                        int blank_index = 0, bool merge_repeated = false)
-      : CTCDecoder(num_classes, batch_size, blank_index, merge_repeated),
+      : CTCDecoder(num_classes, blank_index, merge_repeated),
         beam_width_(beam_width),
         leaves_(beam_width),
         // TODO: ADD CHECK_NOTNULL BACK
@@ -149,13 +149,14 @@ Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Decode(
     const CTCDecoder::SequenceLength& seq_len,
     std::vector<CTCDecoder::Input>& input,
     std::vector<CTCDecoder::Output>* output, ScoreOutput* scores) {
+  int batch_size_ = input[0].rows();
   // Storage for top paths.
   std::vector<std::vector<int>> beams;
   std::vector<float> beam_log_probabilities;
   int top_n = output->size();
   if (std::any_of(output->begin(), output->end(),
-                  [this](const CTCDecoder::Output& output) -> bool {
-                    return output.size() < this->batch_size_;
+                  [batch_size_](const CTCDecoder::Output& output) -> bool {
+                    return output.size() < batch_size_;
                   })) {
     return errors::InvalidArgument(
         "output needs to be of size at least (top_n, batch_size).");

@@ -34,10 +34,9 @@ class CTCDecoder {
   typedef std::vector<std::vector<int>> Output;
   typedef Eigen::Map<Eigen::MatrixXf> ScoreOutput;
 
-  CTCDecoder(int num_classes, int batch_size, int blank_index, bool merge_repeated)
+  CTCDecoder(int num_classes, int blank_index, bool merge_repeated)
       : num_classes_(num_classes),
         blank_index_(blank_index),
-        batch_size_(batch_size),
         merge_repeated_(merge_repeated) {}
 
   virtual ~CTCDecoder() {}
@@ -51,13 +50,11 @@ class CTCDecoder {
                         std::vector<Input>& input,
                         std::vector<Output>* output, ScoreOutput* scores) = 0;
 
-  int batch_size() { return batch_size_; }
   int num_classes() { return num_classes_; }
 
  protected:
   int num_classes_;
   int blank_index_;
-  int batch_size_;
   bool merge_repeated_;
 };
 
@@ -65,13 +62,14 @@ class CTCDecoder {
 // algorithm, selecting at each timestep the most likely class at each timestep.
 class CTCGreedyDecoder : public CTCDecoder {
  public:
-  CTCGreedyDecoder(int num_classes, int batch_size, int blank_index, bool merge_repeated)
-      : CTCDecoder(num_classes, batch_size, blank_index, merge_repeated) {}
+  CTCGreedyDecoder(int num_classes, int blank_index, bool merge_repeated)
+      : CTCDecoder(num_classes, blank_index, merge_repeated) {}
 
   Status Decode(const CTCDecoder::SequenceLength& seq_len,
                 std::vector<CTCDecoder::Input>& input,
                 std::vector<CTCDecoder::Output>* output,
                 CTCDecoder::ScoreOutput* scores) override {
+    int batch_size_ = input[0].cols();
     if (output->empty() || (*output)[0].size() < batch_size_) {
       return errors::InvalidArgument(
           "output needs to be of size at least (1, batch_size).");
