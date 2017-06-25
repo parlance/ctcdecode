@@ -55,23 +55,23 @@ struct BeamEntry {
   // create a vector of children.  The object pointed to by p
   // cannot be copied and should not be moved, otherwise parent will
   // become invalid.
-  BeamEntry(BeamEntry* p, int l, int L, int t) : parent(p), label(l) {
-    PopulateChildren(L);
+  BeamEntry(BeamEntry* p, int l, int L, int blank) : parent(p), label(l) {
+    PopulateChildren(L, blank);
   }
   inline bool Active() const { return newp.total != kLogZero; }
   inline bool HasChildren() const { return !children.empty(); }
-  void PopulateChildren(int L) {
+  void PopulateChildren(int L, int blank) {
     if (HasChildren()) {
       return;
     }
-    children = std::vector<BeamEntry>(L);
-    int ci = 0;
-    for (auto& c : children) {
+    children = std::vector<BeamEntry>(L-1);
+    for (int ci = 0; ci < L; ++ci) {
+      if (ci == blank) continue;
       // The current object cannot be copied, and should not be moved.
       // Otherwise the child's parent will become invalid.
+      auto& c = children[ci];
       c.parent = this;
       c.label = ci;
-      ++ci;
     }
   }
   inline std::vector<BeamEntry>* Children() {
