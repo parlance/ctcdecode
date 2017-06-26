@@ -195,7 +195,6 @@ namespace ctc_beam_search {
       std::string encoded_word;
       utf8::utf16to8(word.begin(), word.end(), std::back_inserter(encoded_word));
       auto &vocabulary = model->GetVocabulary();
-      std::cout << "Looking up: " << encoded_word << std::endl;
       return vocabulary.Index(encoded_word) == vocabulary.NotFound();
     }
 
