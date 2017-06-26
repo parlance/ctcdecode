@@ -8,23 +8,20 @@ import glob
 from distutils.core import setup, Extension
 from torch.utils.ffi import create_extension
 
-third_party_includes=["third_party/" + lib for lib in ["eigen3", "utf8", "kenlm"]]
+include_kenlm=True
 
-klm_files = glob.glob('third_party/kenlm/util/*.cc') + glob.glob('third_party/kenlm/lm/*.cc') + glob.glob('third_party/kenlm/util/double-conversion/*.cc')
-klm_files = [fn for fn in klm_files if not (fn.endswith('main.cc') or fn.endswith('test.cc'))]
-
-klm_args = ['-O3', '-DNDEBUG', '-DKENLM_MAX_ORDER=6', '-std=c++11']
-
-print("klm_files:", klm_files)
-print("klm_args:", klm_args)
-
-klm_libs = ['stdc++']
-if platform.system() != 'Darwin':
-    klm_libs.append('rt')
-    lib_ext = ".so"
+third_party_libs = ["eigen3", "utf8"]
+compile_args = ['-std=c++11', '-fPIC', '-w', '-O3', '-DNDEBUG']
+if include_kenlm:
+    third_party_libs.append("kenlm")
+    compile_args.extend(['-DINCLUDE_KENLM', '-DKENLM_MAX_ORDER=6'])
+    lib_sources = glob.glob('third_party/kenlm/util/*.cc') + glob.glob('third_party/kenlm/lm/*.cc') + glob.glob('third_party/kenlm/util/double-conversion/*.cc')
+    lib_sources = [fn for fn in lib_sources if not (fn.endswith('main.cc') or fn.endswith('test.cc'))]
 else:
-    lib_ext = ".dylib"
+    lib_sources = []
+ext_libs = ['stdc++']
 
+third_party_includes=["third_party/" + lib for lib in third_party_libs]
 ctc_sources = ['pytorch_ctc/src/cpu_binding.cpp', 'pytorch_ctc/src/util/status.cpp']
 ctc_headers = ['pytorch_ctc/src/cpu_binding.h',]
 
@@ -33,11 +30,11 @@ ffi = create_extension(
     package=True,
     language='c++',
     headers=ctc_headers,
-    sources=ctc_sources + klm_files,
+    sources=ctc_sources + lib_sources,
     include_dirs=third_party_includes,
     with_cuda=False,
-    libraries=klm_libs,
-    extra_compile_args=['-std=c++11', '-fPIC', '-w', '-DKENLM_MAX_ORDER=6', '-O3', '-DNDEBUG']
+    libraries=ext_libs,
+    extra_compile_args=compile_args#, '-DINCLUDE_KENLM']
 )
 ffi = ffi.distutils_extension()
 ffi.name = 'pytorch_ctc._ctc_decode'

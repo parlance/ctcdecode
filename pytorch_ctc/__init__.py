@@ -16,6 +16,7 @@ def _import_symbols(locals):
 
 _import_symbols(locals())
 
+
 class BaseCTCBeamDecoder(object):
     def __init__(self, labels, top_paths=1, beam_width=10, blank_index=0, space_index=28, merge_repeated=True):
         self._labels = labels
@@ -51,6 +52,7 @@ class BaseCTCBeamDecoder(object):
 
         return output, scores, out_seq_len
 
+
 class BaseScorer(object):
     def __init__(self):
         self._scorer_type = 0
@@ -62,14 +64,18 @@ class BaseScorer(object):
     def get_scorer(self):
         return self._scorer
 
+
 class Scorer(BaseScorer):
     def __init__(self):
         super(Scorer, self).__init__()
         self._scorer = ctc._get_base_scorer()
 
+
 class KenLMScorer(BaseScorer):
     def __init__(self, labels, lm_path, trie_path, blank_index=0, space_index=28):
         super(KenLMScorer, self).__init__()
+        if ctc._kenlm_enabled() != 1:
+            raise ImportError("pytorch-ctc not compiled with KenLM support.")
         self._scorer_type = 1
         self._scorer = ctc._get_kenlm_scorer(labels, len(labels), space_index, blank_index, lm_path.encode(), trie_path.encode())
 
@@ -96,6 +102,8 @@ class CTCBeamDecoder(BaseCTCBeamDecoder):
 
 
 def generate_lm_trie(dictionary_path, kenlm_path, output_path, labels, blank_index=0, space_index=28):
+    if ctc._kenlm_enabled() != 1:
+        raise ImportError("pytorch-ctc not compiled with KenLM support.")
     result = ctc._generate_lm_trie(labels, len(labels), blank_index, space_index, kenlm_path.encode(), dictionary_path.encode(), output_path.encode())
 
     if result != 0:

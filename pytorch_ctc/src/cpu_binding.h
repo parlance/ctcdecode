@@ -5,6 +5,7 @@ typedef enum {
 
 
 /* scorers */
+int kenlm_enabled();
 void* get_kenlm_scorer(const wchar_t* label_str, int labels_size, int space_index, int blank_index,
                        const char* lm_path, const char* trie_path);
 void set_kenlm_scorer_lm_weight(void *scorer, float weight);

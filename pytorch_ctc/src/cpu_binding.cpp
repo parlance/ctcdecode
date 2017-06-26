@@ -1,23 +1,26 @@
 #include <iostream>
 #include "ctc_beam_entry.h"
 #include "ctc_beam_scorer.h"
-#include "ctc_beam_scorer_klm.h"
 #include "ctc_beam_search.h"
-#include "ctc_trie_node.h"
 #include "ctc_labels.h"
 #include "ctc_decoder.h"
 #include "util/status.h"
 #include "TH.h"
-#include "lm/model.hh"
 #include "cpu_binding.h"
 
-namespace pytorch {
+#ifdef INCLUDE_KENLM
+#include "ctc_beam_scorer_klm.h"
+#include "ctc_trie_node.h"
+#include "lm/model.hh"
+#endif
 
-  using pytorch::ctc::KenLMBeamScorer;
-  using pytorch::ctc::ctc_beam_search::KenLMBeamState;
+namespace pytorch {
   using pytorch::ctc::Labels;
   using pytorch::ctc::Status;
 
+  #ifdef INCLUDE_KENLM
+  using pytorch::ctc::KenLMBeamScorer;
+  using pytorch::ctc::ctc_beam_search::KenLMBeamState;
   typedef lm::ngram::ProbingModel Model;
 
   lm::WordIndex GetWordIndex(const Model& model, const std::string& word) {
@@ -67,30 +70,40 @@ namespace pytorch {
     ofs.close();
     return 0;
   }
+  #endif
 
   extern "C"
   {
     void* get_kenlm_scorer(const wchar_t* label_str, int labels_size, int space_index, int blank_index,
                            const char* lm_path, const char* trie_path) {
-
+      #ifdef INCLUDE_KENLM
       Labels* labels = new Labels(label_str, labels_size, blank_index, space_index);
       ctc::KenLMBeamScorer *beam_scorer = new ctc::KenLMBeamScorer(labels, lm_path, trie_path);
       return static_cast<void*>(beam_scorer);
+      #else
+      return nullptr;
+      #endif
     }
 
     void set_kenlm_scorer_lm_weight(void *scorer, float weight) {
+      #ifdef INCLUDE_KENLM
       ctc::KenLMBeamScorer *beam_scorer = static_cast<ctc::KenLMBeamScorer *>(scorer);
       beam_scorer->SetLMWeight(weight);
+      #endif
     }
 
     void set_kenlm_scorer_wc_weight(void *scorer, float weight) {
+      #ifdef INCLUDE_KENLM
       ctc::KenLMBeamScorer *beam_scorer = static_cast<ctc::KenLMBeamScorer *>(scorer);
       beam_scorer->SetWordCountWeight(weight);
+      #endif
     }
 
     void set_kenlm_scorer_vwc_weight(void *scorer, float weight) {
+      #ifdef INCLUDE_KENLM
       ctc::KenLMBeamScorer *beam_scorer = static_cast<ctc::KenLMBeamScorer *>(scorer);
       beam_scorer->SetValidWordCountWeight(weight);
+      #endif
     }
 
     void* get_base_scorer() {
@@ -107,6 +120,7 @@ namespace pytorch {
                 (num_classes, beam_width, beam_scorer, blank_index, merge_repeated == 1);
             return static_cast<void *>(decoder);
           }
+        #ifdef INCLUDE_KENLM
         case CTC_KENLM:
         {
           ctc::KenLMBeamScorer *beam_scorer = static_cast<ctc::KenLMBeamScorer*>(scorer);
@@ -114,6 +128,7 @@ namespace pytorch {
               (num_classes, beam_width, beam_scorer, blank_index, merge_repeated == 1);
           return static_cast<void *>(decoder);
         }
+        #endif
       }
       return nullptr;
     }
@@ -165,6 +180,7 @@ namespace pytorch {
             }
           }
           break;
+        #ifdef INCLUDE_KENLM
         case CTC_KENLM:
           {
             ctc::CTCBeamSearchDecoder<KenLMBeamState> *decoder = static_cast<ctc::CTCBeamSearchDecoder<KenLMBeamState> *>(void_decoder);
@@ -175,6 +191,7 @@ namespace pytorch {
             }
           }
           break;
+        #endif
       }
 
       std::vector<float> log_probs;
@@ -200,9 +217,20 @@ namespace pytorch {
 
     int generate_lm_trie(const wchar_t* label_str, int size, int blank_index, int space_index,
                          const char* lm_path, const char* dictionary_path, const char* output_path) {
+        #ifdef INCLUDE_KENLM
         Labels labels(label_str, size, blank_index, space_index);
-
         return generate_trie(labels, lm_path, dictionary_path, output_path);
+        #else
+        return -1;
+        #endif
+    }
+
+    int kenlm_enabled() {
+      #ifdef INCLUDE_KENLM
+      return 1;
+      #else
+      return 0;
+      #endif
     }
   }
 }
