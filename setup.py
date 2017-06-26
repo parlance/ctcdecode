@@ -8,18 +8,41 @@ import glob
 from distutils.core import setup, Extension
 from torch.utils.ffi import create_extension
 
-include_kenlm=True
+#Does gcc compile with this header and library?
+def compile_test(header, library):
+    dummy_path = os.path.join(os.path.dirname(__file__), "dummy")
+    command = "bash -c \"g++ -include " + header + " -l" + library + " -x c++ - <<<'int main() {}' -o " + dummy_path + " >/dev/null 2>/dev/null && rm " + dummy_path + " 2>/dev/null\""
+    return os.system(command) == 0
+
+# this is a hack, but makes this significantly easier
+include_kenlm = True
+ex_klm = "--exclude-kenlm"
+if ex_klm in sys.argv:
+    include_kenlm=False
+    sys.argv.remove(ex_klm)
 
 third_party_libs = ["eigen3", "utf8"]
+lib_sources = []
 compile_args = ['-std=c++11', '-fPIC', '-w', '-O3', '-DNDEBUG']
+ext_libs = ['stdc++']
+
+if compile_test('zlib.h', 'z'):
+    compile_args.append('-DHAVE_ZLIB')
+    ext_libs.append('z')
+
+if compile_test('bzlib.h', 'bz2'):
+    compile_args.append('-DHAVE_BZLIB')
+    ext_libs.append('bz2')
+
+if compile_test('lzma.h', 'lzma'):
+    compile_args.append('-DHAVE_XZLIB')
+    ext_libs.append('lzma')
+
 if include_kenlm:
     third_party_libs.append("kenlm")
     compile_args.extend(['-DINCLUDE_KENLM', '-DKENLM_MAX_ORDER=6'])
     lib_sources = glob.glob('third_party/kenlm/util/*.cc') + glob.glob('third_party/kenlm/lm/*.cc') + glob.glob('third_party/kenlm/util/double-conversion/*.cc')
     lib_sources = [fn for fn in lib_sources if not (fn.endswith('main.cc') or fn.endswith('test.cc'))]
-else:
-    lib_sources = []
-ext_libs = ['stdc++']
 
 third_party_includes=["third_party/" + lib for lib in third_party_libs]
 ctc_sources = ['pytorch_ctc/src/cpu_binding.cpp', 'pytorch_ctc/src/util/status.cpp']
