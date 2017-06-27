@@ -12,7 +12,7 @@ cd pytorch-ctc
 # install dependencies (PyTorch and CFFI)
 pip install -r requirements.txt
 
-# build the extension and install python package
+# build the extension and install python package (requires gcc-5 or later)
 # python setup.py install
 CC=/path/to/gcc-5 CXX=/path/to/g++-5 python setup.py install
 
