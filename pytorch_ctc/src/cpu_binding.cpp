@@ -164,8 +164,8 @@ namespace pytorch {
       for (ctc::CTCDecoder::Output& output : outputs) {
         output.resize(batch_size);
       }
-
-      float score[batch_size][top_paths] = {{0.0}};
+      float score[batch_size][top_paths];
+      memset(score, 0.0, batch_size*top_paths*sizeof(int));
       Eigen::Map<Eigen::MatrixXf> *scores;
 
       // TODO: this is ugly -- can we better leverage generics somehow?
