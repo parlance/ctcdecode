@@ -90,7 +90,7 @@ namespace ctc_beam_search {
 
         // TODO replace with OOV unigram prob?
         // If we have no valid prefix we assume a very low log probability
-        float min_unigram_score = -10.0f;
+        float min_unigram_score = -1000.0f;
         // If prefix does exist
         if (trie_node != nullptr) {
           trie_node = trie_node->GetChildAt(to_label);
