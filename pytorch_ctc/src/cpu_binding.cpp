@@ -218,7 +218,7 @@ namespace pytorch {
       return 1;
     }
 
-    int _generate_lm_dict(const wchar_t* label_str, int size, int blank_index, int space_index,
+    int generate_lm_dict(const wchar_t* label_str, int size, int blank_index, int space_index,
                          const char* lm_path, const char* dictionary_path, const char* output_path) {
         #ifdef INCLUDE_KENLM
         Labels labels(label_str, size, blank_index, space_index);
