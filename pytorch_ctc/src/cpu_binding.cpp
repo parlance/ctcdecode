@@ -88,6 +88,11 @@ namespace pytorch {
       #endif
     }
 
+    void free_kenlm_scorer(void* kenlm_scorer) {
+      ctc::KenLMBeamScorer* beam_scorer = static_cast<ctc::KenLMBeamScorer*>(kenlm_scorer);
+      delete beam_scorer;
+    }
+
     void set_kenlm_scorer_lm_weight(void *scorer, float weight) {
       #ifdef INCLUDE_KENLM
       ctc::KenLMBeamScorer *beam_scorer = static_cast<ctc::KenLMBeamScorer *>(scorer);

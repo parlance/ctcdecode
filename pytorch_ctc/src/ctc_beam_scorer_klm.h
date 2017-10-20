@@ -48,9 +48,10 @@ namespace ctc_beam_search {
   class KenLMBeamScorer : public BaseBeamScorer<KenLMBeamState> {
    public:
 
-    virtual ~KenLMBeamScorer() {
+    ~KenLMBeamScorer() {
       delete model;
       delete trieRoot;
+      delete labels;
     }
     KenLMBeamScorer(Labels *labels, const char *kenlm_path, const char *trie_path)
                       : lm_weight(1.0f),
