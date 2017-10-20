@@ -40,7 +40,7 @@ namespace pytorch {
     return full_score_return.prob;
   }
 
-  int generate_trie(Labels& labels, const char* kenlm_path, const char* vocab_path, const char* trie_path) {
+  int generate_dictionary(Labels& labels, const char* kenlm_path, const char* vocab_path, const char* trie_path) {
     lm::ngram::Config config;
     config.load_method = util::POPULATE_OR_READ;
     Model* model = lm::ngram::LoadVirtual(kenlm_path, config);
@@ -218,11 +218,11 @@ namespace pytorch {
       return 1;
     }
 
-    int generate_lm_trie(const wchar_t* label_str, int size, int blank_index, int space_index,
+    int _generate_lm_dict(const wchar_t* label_str, int size, int blank_index, int space_index,
                          const char* lm_path, const char* dictionary_path, const char* output_path) {
         #ifdef INCLUDE_KENLM
         Labels labels(label_str, size, blank_index, space_index);
-        return generate_trie(labels, lm_path, dictionary_path, output_path);
+        return generate_dictionary(labels, lm_path, dictionary_path, output_path);
         #else
         return -1;
         #endif

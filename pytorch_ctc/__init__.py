@@ -77,7 +77,8 @@ class KenLMScorer(BaseScorer):
         if ctc._kenlm_enabled() != 1:
             raise ImportError("pytorch-ctc not compiled with KenLM support.")
         self._scorer_type = 1
-        self._scorer = ctc._get_kenlm_scorer(labels, len(labels), space_index, blank_index, lm_path.encode(), trie_path.encode())
+        self._scorer = ctc._get_kenlm_scorer(labels, len(labels), space_index, blank_index, lm_path.encode(),
+                                             trie_path.encode())
 
     def set_lm_weight(self, weight):
         if weight is not None:
@@ -94,17 +95,21 @@ class KenLMScorer(BaseScorer):
 
 class CTCBeamDecoder(BaseCTCBeamDecoder):
     def __init__(self, scorer, labels, top_paths=1, beam_width=10, blank_index=0, space_index=28, merge_repeated=True):
-        super(CTCBeamDecoder, self).__init__(labels, top_paths=top_paths, beam_width=beam_width, blank_index=blank_index, space_index=space_index, merge_repeated=merge_repeated)
+        super(CTCBeamDecoder, self).__init__(labels, top_paths=top_paths, beam_width=beam_width,
+                                             blank_index=blank_index, space_index=space_index,
+                                             merge_repeated=merge_repeated)
         merge_int = 1 if merge_repeated else 0
         self._scorer = scorer
         self._decoder_type = self._scorer.get_scorer_type()
-        self._decoder = ctc._get_ctc_beam_decoder(self._num_classes, top_paths, beam_width, blank_index, merge_int, self._scorer.get_scorer(), self._decoder_type)
+        self._decoder = ctc._get_ctc_beam_decoder(self._num_classes, top_paths, beam_width, blank_index, merge_int,
+                                                  self._scorer.get_scorer(), self._decoder_type)
 
 
-def generate_lm_trie(dictionary_path, kenlm_path, output_path, labels, blank_index=0, space_index=28):
+def generate_lm_dict(dictionary_path, kenlm_path, output_path, labels, blank_index=0, space_index=28):
     if ctc._kenlm_enabled() != 1:
         raise ImportError("pytorch-ctc not compiled with KenLM support.")
-    result = ctc._generate_lm_trie(labels, len(labels), blank_index, space_index, kenlm_path.encode(), dictionary_path.encode(), output_path.encode())
+    result = ctc._generate_lm_dict(labels, len(labels), blank_index, space_index, kenlm_path.encode(),
+                                   dictionary_path.encode(), output_path.encode())
 
     if result != 0:
-        raise ValueError("Error encountered generating trie")
+        raise ValueError("Error encountered generating dictionary")
