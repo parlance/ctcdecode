@@ -78,7 +78,7 @@ and returns:
 
 ### Utilities
 ```python
-generate_lm_trie(dictionary_path, kenlm_path, output_path, labels, blank_index, space_index)
+generate_lm_dict(dictionary_path, kenlm_path, output_path, labels, blank_index, space_index)
 ```
 
 A vocabulary trie is required for the KenLM Scorer. The trie is created from a lexicon specified as a newline separated text file of words in the vocabulary.

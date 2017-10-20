@@ -21,26 +21,29 @@ namespace pytorch {
   #ifdef INCLUDE_KENLM
   using pytorch::ctc::KenLMBeamScorer;
   using pytorch::ctc::ctc_beam_search::KenLMBeamState;
-  typedef lm::ngram::ProbingModel Model;
+  typedef lm::base::Model Model;
 
-  lm::WordIndex GetWordIndex(const Model& model, const std::string& word) {
+  lm::WordIndex GetWordIndex(const Model* model, const std::string& word) {
     lm::WordIndex vocab;
-    vocab = model.GetVocabulary().Index(word);
+    vocab = model->BaseVocabulary().Index(word);
     return vocab;
   }
 
-  float ScoreWord(const Model& model, lm::WordIndex vocab) {
-    Model::State in_state = model.NullContextState();
-    Model::State out;
-    lm::FullScoreReturn full_score_return;
-    full_score_return = model.FullScore(in_state, vocab, out);
+  float ScoreWord(const Model* model, lm::WordIndex vocab) {
+    lm::ngram::State in_state;
+    lm::ngram::State out;
+    lm::FullScoreReturn full_score_return; 
+
+    model->BeginSentenceWrite(&in_state);
+    full_score_return = model->BaseFullScore(&in_state, vocab, &out);
+
     return full_score_return.prob;
   }
 
-  int generate_trie(Labels& labels, const char* kenlm_path, const char* vocab_path, const char* trie_path) {
+  int generate_dictionary(Labels& labels, const char* kenlm_path, const char* vocab_path, const char* trie_path) {
     lm::ngram::Config config;
     config.load_method = util::POPULATE_OR_READ;
-    Model model(kenlm_path, config);
+    Model* model = lm::ngram::LoadVirtual(kenlm_path, config);
     ctc::TrieNode root(labels.GetSize());
 
     std::ifstream ifs;
@@ -215,11 +218,11 @@ namespace pytorch {
       return 1;
     }
 
-    int generate_lm_trie(const wchar_t* label_str, int size, int blank_index, int space_index,
+    int generate_lm_dict(const wchar_t* label_str, int size, int blank_index, int space_index,
                          const char* lm_path, const char* dictionary_path, const char* output_path) {
         #ifdef INCLUDE_KENLM
         Labels labels(label_str, size, blank_index, space_index);
-        return generate_trie(labels, lm_path, dictionary_path, output_path);
+        return generate_dictionary(labels, lm_path, dictionary_path, output_path);
         #else
         return -1;
         #endif
