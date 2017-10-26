@@ -108,6 +108,9 @@ class CTCBeamDecoder(BaseCTCBeamDecoder):
         self._decoder = ctc._get_ctc_beam_decoder(self._num_classes, top_paths, beam_width, blank_index,
                                                   self._scorer.get_scorer(), self._decoder_type)
 
+    def set_label_selection_parameters(self, label_size=0, label_margin=-1):
+        ctc._set_label_selection_parameters(self._decoder, label_size, label_margin)
+
 
 def generate_lm_dict(dictionary_path, kenlm_path, output_path, labels, blank_index=0, space_index=28):
     if ctc._kenlm_enabled() != 1:

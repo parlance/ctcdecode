@@ -13,6 +13,7 @@ void free_kenlm_scorer(void* kenlm_scorer);
 void set_kenlm_scorer_lm_weight(void *scorer, float weight);
 void set_kenlm_scorer_wc_weight(void *scorer, float weight);
 void set_kenlm_scorer_vwc_weight(void *scorer, float weight);
+void set_label_selection_parameters(void *decoder, int label_selection_size, float label_selection_margin);
 void* get_base_scorer();
 
 

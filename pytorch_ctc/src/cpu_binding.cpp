@@ -115,6 +115,11 @@ namespace pytorch {
       #endif
     }
 
+    void set_label_selection_parameters(void *decoder, int label_selection_size, float label_selection_margin) {
+      ctc::CTCBeamSearchDecoder<> *beam_decoder = static_cast<ctc::CTCBeamSearchDecoder<> *>(decoder);
+      beam_decoder->SetLabelSelectionParameters(label_selection_size, label_selection_margin);
+    }
+
     void* get_base_scorer() {
       ctc::CTCBeamSearchDecoder<>::DefaultBeamScorer *beam_scorer = new ctc::CTCBeamSearchDecoder<>::DefaultBeamScorer();
       return static_cast<void *>(beam_scorer);
