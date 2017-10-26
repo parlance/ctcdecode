@@ -47,10 +47,12 @@ class BaseCTCBeamDecoder(object):
         output = torch.IntTensor(self._top_paths, batch_size, max_seq_len)
         scores = torch.FloatTensor(self._top_paths, batch_size)
         out_seq_len = torch.IntTensor(self._top_paths, batch_size)
+        alignments = torch.IntTensor(self._top_paths, batch_size, max_seq_len)
 
-        result = ctc._ctc_beam_decode(self._decoder, self._decoder_type, probs, seq_len, output, scores, out_seq_len)
+        result = ctc._ctc_beam_decode(self._decoder, self._decoder_type, probs, seq_len, output, scores, out_seq_len,
+                                      alignments)
 
-        return output, scores, out_seq_len
+        return output, scores, out_seq_len, alignments
 
 
 class BaseScorer(object):

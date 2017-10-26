@@ -50,17 +50,18 @@ struct BeamProbability {
 template <class CTCBeamState = EmptyBeamState>
 struct BeamEntry {
   // Default constructor does not create a vector of children.
-  BeamEntry() : parent(nullptr), label(-1) {}
+  BeamEntry() : parent(nullptr), label(-1), time_step(-1) {}
   // Constructor giving parent, label, and number of children does
   // create a vector of children.  The object pointed to by p
   // cannot be copied and should not be moved, otherwise parent will
   // become invalid.
-  BeamEntry(BeamEntry* p, int l, int L, int blank) : parent(p), label(l) {
-    PopulateChildren(L, blank);
+  BeamEntry(BeamEntry* p, int l, int L, int blank, int t)
+      : parent(p), label(l), time_step(t) {
+    PopulateChildren(L, blank, t);
   }
   inline bool Active() const { return newp.total != kLogZero; }
   inline bool HasChildren() const { return !children.empty(); }
-  void PopulateChildren(int L, int blank) {
+  void PopulateChildren(int L, int blank, int t) {
     if (HasChildren()) {
       return;
     }
@@ -74,6 +75,7 @@ struct BeamEntry {
       auto& c = children[cl];
       c.parent = this;
       c.label = ci;
+      c.time_step = t;
       ++cl;
     }
   }
@@ -104,8 +106,24 @@ struct BeamEntry {
     return labels;
   }
 
+  std::vector<int> TimeStepSeq(bool merge_repeated) const {
+    std::vector<int> time_steps;
+    int prev_label = -1;
+    const BeamEntry *c = this;
+    while (c->parent != nullptr) {  // Checking c->parent to skip root leaf.
+      if (!merge_repeated || c->label != prev_label) {
+        time_steps.push_back(c->time_step);
+      }
+      prev_label = c->label;
+      c = c->parent;
+    }
+    std::reverse(time_steps.begin(), time_steps.end());
+    return time_steps;
+  }
+
   BeamEntry<CTCBeamState>* parent;
   int label;
+  int time_step;
   std::vector<BeamEntry<CTCBeamState> > children;
   BeamProbability oldp;
   BeamProbability newp;

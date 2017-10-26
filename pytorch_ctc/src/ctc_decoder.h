@@ -15,8 +15,6 @@ limitations under the License.
 
 #include "Eigen/Core"
 #include "util/status.h"
-//#include "tensorflow/core/lib/core/errors.h"
-//#include "tensorflow/core/lib/core/status.h"
 
 namespace pytorch {
 namespace ctc {
@@ -48,7 +46,8 @@ class CTCDecoder {
   //  - scores(b, i) - b = 0 to batch_size; i = 0 to output.size()
   virtual Status Decode(const SequenceLength& seq_len,
                         std::vector<Input>& input,
-                        std::vector<Output>* output, ScoreOutput* scores) = 0;
+                        std::vector<Output>* output, ScoreOutput* scores,
+                        std::vector<Output> *alignment) = 0;
 
   int num_classes() { return num_classes_; }
 
@@ -68,7 +67,8 @@ class CTCGreedyDecoder : public CTCDecoder {
   Status Decode(const CTCDecoder::SequenceLength& seq_len,
                 std::vector<CTCDecoder::Input>& input,
                 std::vector<CTCDecoder::Output>* output,
-                CTCDecoder::ScoreOutput* scores) override {
+                CTCDecoder::ScoreOutput* scores,
+                std::vector<CTCDecoder::Output> *alignment) override {
     int batch_size_ = input[0].cols();
     if (output->empty() || (*output)[0].size() < batch_size_) {
       return errors::InvalidArgument(
@@ -83,6 +83,7 @@ class CTCGreedyDecoder : public CTCDecoder {
       int seq_len_b = seq_len[b];
       // Only writing to beam 0
       std::vector<int>& output_b = (*output)[0][b];
+      std::vector<int> &alignment_b = (*alignment)[0][b];
 
       int prev_class_ix = -1;
       (*scores)(b, 0) = 0;
@@ -93,6 +94,7 @@ class CTCGreedyDecoder : public CTCDecoder {
         if (max_class_ix != blank_index_ &&
             !(merge_repeated_ && max_class_ix == prev_class_ix)) {
           output_b.push_back(max_class_ix);
+          alignment_b.push_back(t);
         }
         prev_class_ix = max_class_ix;
       }

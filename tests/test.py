@@ -15,8 +15,8 @@ class CTCDecodeTests(unittest.TestCase):
         decoder_merge = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=1, space_index=-1, top_paths=1, beam_width=1, merge_repeated=True)
         decoder_nomerge = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=1, space_index=-1, top_paths=1, beam_width=1, merge_repeated=False)
 
-        result_merge, _, result_merge_len = decoder_merge.decode(aa, seq_len)
-        result_nomerge, _, result_nomerge_len = decoder_nomerge.decode(aa, seq_len)
+        result_merge, _, result_merge_len, merge_alignments = decoder_merge.decode(aa, seq_len)
+        result_nomerge, _, result_nomerge_len, nomerge_alignments = decoder_nomerge.decode(aa, seq_len)
         self.assertEqual(result_merge_len[0][0], 1)
         self.assertEqual(result_nomerge_len[0][0], 2)
         self.assertEqual(result_merge.numpy()[0,0,:result_merge_len[0][0]].tolist(), [0])
@@ -31,8 +31,8 @@ class CTCDecodeTests(unittest.TestCase):
         decoder_merge = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=0, space_index=-1, top_paths=1, beam_width=1, merge_repeated=True)
         decoder_nomerge = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=0, space_index=-1, top_paths=1, beam_width=1, merge_repeated=False)
 
-        result_merge, _, result_merge_len = decoder_merge.decode(aa, seq_len)
-        result_nomerge, _, result_nomerge_len = decoder_nomerge.decode(aa, seq_len)
+        result_merge, _, result_merge_len, merge_alignments = decoder_merge.decode(aa, seq_len)
+        result_nomerge, _, result_nomerge_len, nomerge_alignments = decoder_nomerge.decode(aa, seq_len)
 
         self.assertEqual(result_merge_len[0][0], 1)
         self.assertEqual(result_nomerge_len[0][0], 2)
@@ -73,9 +73,8 @@ class CTCDecodeTests(unittest.TestCase):
         scorer = pytorch_ctc.Scorer()
         decoder = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=5, space_index=-1, top_paths=2, beam_width=2, merge_repeated=False)
 
-        decode_result, scores, decode_len = decoder.decode(th_input, th_seq_len)
+        decode_result, scores, decode_len, alignments = decoder.decode(th_input, th_seq_len)
 
-        #self.assertEqual(result_merge.numpy()[0,0,:result_len[0][0]].tolist(), [1])
         self.assertEqual(decode_len[0][0], 2)
         self.assertEqual(decode_len[1][0], 3)
         self.assertEqual(decode_result.numpy()[0,0,:decode_len[0][0]].tolist(), [1, 0])
@@ -116,9 +115,8 @@ class CTCDecodeTests(unittest.TestCase):
         scorer = pytorch_ctc.Scorer()
         decoder = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=0, space_index=-1, top_paths=2, beam_width=2, merge_repeated=False)
 
-        decode_result, scores, decode_len = decoder.decode(th_input, th_seq_len)
+        decode_result, scores, decode_len, alignments = decoder.decode(th_input, th_seq_len)
 
-        #self.assertEqual(result_merge.numpy()[0,0,:result_len[0][0]].tolist(), [1])
         self.assertEqual(decode_len[0][0], 2)
         self.assertEqual(decode_len[1][0], 3)
         self.assertEqual(decode_result.numpy()[0,0,:decode_len[0][0]].tolist(), [2, 1])
