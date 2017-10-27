@@ -121,6 +121,8 @@ class CTCDecodeTests(unittest.TestCase):
         self.assertEqual(decode_len[1][0], 3)
         self.assertEqual(decode_result.numpy()[0,0,:decode_len[0][0]].tolist(), [2, 1])
         self.assertEqual(decode_result.numpy()[1,0,:decode_len[1][0]].tolist(), [1, 2, 1])
+        self.assertEqual(alignments.numpy()[0,0,:decode_len[0][0]].tolist(), [0, 4])
+        self.assertEqual(alignments.numpy()[1,0,:decode_len[1][0]].tolist(), [0, 2, 4])
         np.testing.assert_almost_equal(scores.numpy(), np.array([[-0.584855], [-0.389139]]), 5)
 
 if __name__ == '__main__':

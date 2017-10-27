@@ -302,7 +302,7 @@ void CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Step(
     }
 
     if (!b->HasChildren()) {
-      b->PopulateChildren(num_classes_, blank_index_, time_step);
+      b->PopulateChildren(num_classes_, blank_index_);
     }
 
     for (BeamEntry& c : *b->Children()) {
@@ -334,6 +334,7 @@ void CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Step(
             BeamEntry* bottom = leaves_.peek_bottom();
             bottom->newp.Reset();
           }
+          c.time_step = time_step;
           leaves_.push(&c);
         } else {
           // Deactivate child (signal it's not in the beam)
@@ -351,7 +352,7 @@ void CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Reset() {
 
   // This beam root, and all of its children, will be in memory until
   // the next reset.
-  beam_root_.reset(new BeamEntry(nullptr, -1, num_classes_, blank_index_, -1));
+  beam_root_.reset(new BeamEntry(nullptr, -1, num_classes_, blank_index_));
   beam_root_->newp.total = 0.0;  // ln(1)
   beam_root_->newp.blank = 0.0;  // ln(1)
 

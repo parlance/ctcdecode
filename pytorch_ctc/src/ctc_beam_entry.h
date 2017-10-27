@@ -55,13 +55,13 @@ struct BeamEntry {
   // create a vector of children.  The object pointed to by p
   // cannot be copied and should not be moved, otherwise parent will
   // become invalid.
-  BeamEntry(BeamEntry* p, int l, int L, int blank, int t)
-      : parent(p), label(l), time_step(t) {
-    PopulateChildren(L, blank, t);
+  BeamEntry(BeamEntry* p, int l, int L, int blank)
+      : parent(p), label(l), time_step(-1) {
+    PopulateChildren(L, blank);
   }
   inline bool Active() const { return newp.total != kLogZero; }
   inline bool HasChildren() const { return !children.empty(); }
-  void PopulateChildren(int L, int blank, int t) {
+  void PopulateChildren(int L, int blank) {
     if (HasChildren()) {
       return;
     }
@@ -75,7 +75,6 @@ struct BeamEntry {
       auto& c = children[cl];
       c.parent = this;
       c.label = ci;
-      c.time_step = t;
       ++cl;
     }
   }
