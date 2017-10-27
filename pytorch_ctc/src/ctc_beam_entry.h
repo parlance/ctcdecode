@@ -105,14 +105,12 @@ struct BeamEntry {
     return labels;
   }
 
-  std::vector<int> TimeStepSeq(bool merge_repeated) const {
+  std::vector<int> TimeStepSeq() const {
     std::vector<int> time_steps;
     int prev_label = -1;
     const BeamEntry *c = this;
     while (c->parent != nullptr) {  // Checking c->parent to skip root leaf.
-      if (!merge_repeated || c->label != prev_label) {
-        time_steps.push_back(c->time_step);
-      }
+      time_steps.push_back(c->time_step);
       prev_label = c->label;
       c = c->parent;
     }

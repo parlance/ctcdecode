@@ -396,7 +396,7 @@ Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::TopPaths(
     BeamEntry* e((*branches)[i]);
     paths->push_back(e->LabelSeq(merge_repeated));
     log_probs->push_back(e->newp.total);
-    alignments->push_back(e->TimeStepSeq(merge_repeated));
+    alignments->push_back(e->TimeStepSeq());
   }
   return Status::OK();
 }
