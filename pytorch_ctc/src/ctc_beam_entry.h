@@ -50,12 +50,13 @@ struct BeamProbability {
 template <class CTCBeamState = EmptyBeamState>
 struct BeamEntry {
   // Default constructor does not create a vector of children.
-  BeamEntry() : parent(nullptr), label(-1) {}
+  BeamEntry() : parent(nullptr), label(-1), time_step(-1) {}
   // Constructor giving parent, label, and number of children does
   // create a vector of children.  The object pointed to by p
   // cannot be copied and should not be moved, otherwise parent will
   // become invalid.
-  BeamEntry(BeamEntry* p, int l, int L, int blank) : parent(p), label(l) {
+  BeamEntry(BeamEntry* p, int l, int L, int blank)
+      : parent(p), label(l), time_step(-1) {
     PopulateChildren(L, blank);
   }
   inline bool Active() const { return newp.total != kLogZero; }
@@ -104,8 +105,22 @@ struct BeamEntry {
     return labels;
   }
 
+  std::vector<int> TimeStepSeq() const {
+    std::vector<int> time_steps;
+    int prev_label = -1;
+    const BeamEntry *c = this;
+    while (c->parent != nullptr) {  // Checking c->parent to skip root leaf.
+      time_steps.push_back(c->time_step);
+      prev_label = c->label;
+      c = c->parent;
+    }
+    std::reverse(time_steps.begin(), time_steps.end());
+    return time_steps;
+  }
+
   BeamEntry<CTCBeamState>* parent;
   int label;
+  int time_step;
   std::vector<BeamEntry<CTCBeamState> > children;
   BeamProbability oldp;
   BeamProbability newp;

@@ -137,7 +137,7 @@ namespace pytorch {
     }
 
     int ctc_beam_decode(void *void_decoder, DecodeType type, THFloatTensor *th_probs, THIntTensor *th_seq_len, THIntTensor *th_output,
-                        THFloatTensor *th_scores, THIntTensor *th_out_len)
+                        THFloatTensor *th_scores, THIntTensor *th_out_len, THIntTensor *th_alignments)
     {
       const int64_t max_time = THFloatTensor_size(th_probs, 0);
       const int64_t batch_size = THFloatTensor_size(th_probs, 1);
@@ -167,6 +167,10 @@ namespace pytorch {
       for (ctc::CTCDecoder::Output& output : outputs) {
         output.resize(batch_size);
       }
+      std::vector<ctc::CTCDecoder::Output> alignments(top_paths);
+      for (ctc::CTCDecoder::Output& alignment : alignments) {
+        alignment.resize(batch_size);
+      }
       float score[batch_size][top_paths];
       memset(score, 0.0, batch_size*top_paths*sizeof(int));
       Eigen::Map<Eigen::MatrixXf> *scores;
@@ -177,7 +181,7 @@ namespace pytorch {
           {
             ctc::CTCBeamSearchDecoder<> *decoder = static_cast<ctc::CTCBeamSearchDecoder<> *>(void_decoder);
             scores = new Eigen::Map<Eigen::MatrixXf>(&score[0][0], batch_size, decoder->GetBeamWidth());
-            Status stat = decoder->Decode(seq_len, inputs, &outputs, scores);
+            Status stat = decoder->Decode(seq_len, inputs, &outputs, scores, &alignments);
             if (!stat.ok()) {
               return 0;
             }
@@ -188,7 +192,7 @@ namespace pytorch {
           {
             ctc::CTCBeamSearchDecoder<KenLMBeamState> *decoder = static_cast<ctc::CTCBeamSearchDecoder<KenLMBeamState> *>(void_decoder);
             scores = new Eigen::Map<Eigen::MatrixXf>(&score[0][0], batch_size, decoder->GetBeamWidth());
-            Status stat = decoder->Decode(seq_len, inputs, &outputs, scores);
+            Status stat = decoder->Decode(seq_len, inputs, &outputs, scores, &alignments);
             if (!stat.ok()) {
               return 0;
             }
@@ -203,6 +207,7 @@ namespace pytorch {
         int64_t offset = 0;
         for (int b=0; b < batch_size; ++b) {
           auto& p_batch = outputs[p][b];
+          auto& alignment_batch = alignments[p][b];
           int64_t num_decoded = p_batch.size();
 
           max_decoded = std::max(max_decoded, num_decoded);
@@ -210,6 +215,7 @@ namespace pytorch {
           for (int64_t t=0; t < num_decoded; ++t) {
             // TODO: this could be more efficient (significant pointer arithmetic every time currently)
             THIntTensor_set3d(th_output, p, b, t, p_batch[t]);
+            THIntTensor_set3d(th_alignments, p, b, t, alignment_batch[t]);
             THFloatTensor_set2d(th_scores, p, b, (*scores)(b, p));
           }
         }

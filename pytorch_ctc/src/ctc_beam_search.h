@@ -17,11 +17,7 @@ limitations under the License.
 #include <memory>
 
 #include "Eigen/Core"
-//#include "tensorflow/core/lib/core/errors.h"
 #include "util/top_n.h"
-//#include "tensorflow/core/platform/logging.h"
-//#include "tensorflow/core/platform/macros.h"
-//#include "tensorflow/core/platform/types.h"
 #include "ctc_beam_entry.h"
 #include "ctc_beam_scorer.h"
 #include "ctc_decoder.h"
@@ -95,11 +91,12 @@ class CTCBeamSearchDecoder : public CTCDecoder {
   Status Decode(const CTCDecoder::SequenceLength& seq_len,
                 std::vector<CTCDecoder::Input>& input,
                 std::vector<CTCDecoder::Output>* output,
-                CTCDecoder::ScoreOutput* scores) override;
+                CTCDecoder::ScoreOutput* scores,
+                std::vector<CTCDecoder::Output>* alignment) override;
 
   // Calculate the next step of the beam search and update the internal state.
   template <typename Vector>
-  void Step(const Vector& log_input_t);
+  void Step(const Vector& log_input_t, int time_step);
 
   // Retrieve the beam scorer instance used during decoding.
   BaseBeamScorer<CTCBeamState>* GetBeamScorer() const { return beam_scorer_; }
@@ -119,7 +116,9 @@ class CTCBeamSearchDecoder : public CTCDecoder {
 
   // Extract the top n paths at current time step
   Status TopPaths(int n, std::vector<std::vector<int>>* paths,
-                  std::vector<float>* log_probs, bool merge_repeated) const;
+                  std::vector<float>* log_probs,
+                  std::vector<std::vector<int>> *alignments,
+                  bool merge_repeated) const;
 
  private:
   int beam_width_;
@@ -148,7 +147,9 @@ template <typename CTCBeamState, typename CTCBeamComparer>
 Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Decode(
     const CTCDecoder::SequenceLength& seq_len,
     std::vector<CTCDecoder::Input>& input,
-    std::vector<CTCDecoder::Output>* output, ScoreOutput* scores) {
+    std::vector<CTCDecoder::Output>* output,
+    CTCDecoder::ScoreOutput* scores,
+    std::vector<CTCDecoder::Output>* alignment) {
   int batch_size_ = input[0].rows();
   // Storage for top paths.
   std::vector<std::vector<int>> beams;
@@ -172,7 +173,7 @@ Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Decode(
 
     for (int t = 0; t < seq_len_b; ++t) {
       // Pass log-probabilities for this example + time.
-      Step(input[t].row(b));
+      Step(input[t].row(b), t);
     }  // for (int t...
 
     // O(n * log(n))
@@ -186,9 +187,9 @@ Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Decode(
       leaves_.push(entry);
     }
 
-
-    Status status =
-        TopPaths(top_n, &beams, &beam_log_probabilities, merge_repeated_);
+    std::vector<std::vector<int>> beam_alignments;
+    Status status = TopPaths(top_n, &beams, &beam_log_probabilities, &beam_alignments,
+                    merge_repeated_);
 
     if (!status.ok()) {
       return status;
@@ -208,6 +209,7 @@ Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Decode(
       // Copy output to the correct beam + batch
       (*output)[i][b].swap(beams[i]);
       (*scores)(b, i) = -beam_log_probabilities[i];
+      (*alignment)[i][b].swap(beam_alignments[i]);
     }
   }  // for (int b...
   return Status::OK();
@@ -216,7 +218,7 @@ Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Decode(
 template <typename CTCBeamState, typename CTCBeamComparer>
 template <typename Vector>
 void CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Step(
-    const Vector& raw_input) {
+    const Vector& raw_input, int time_step) {
   Eigen::ArrayXf input = raw_input;
   // Remove the max for stability when performing log-prob calculations.
   input -= input.maxCoeff();
@@ -331,6 +333,7 @@ void CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Step(
             BeamEntry* bottom = leaves_.peek_bottom();
             bottom->newp.Reset();
           }
+          c.time_step = time_step;
           leaves_.push(&c);
         } else {
           // Deactivate child (signal it's not in the beam)
@@ -362,7 +365,7 @@ void CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Reset() {
 template <typename CTCBeamState, typename CTCBeamComparer>
 Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::TopPaths(
     int n, std::vector<std::vector<int>>* paths, std::vector<float>* log_probs,
-    bool merge_repeated) const {
+    std::vector<std::vector<int>> *alignments, bool merge_repeated) const {
   if (paths == nullptr || log_probs == nullptr) {
     return errors::FailedPrecondition(
       "Internal paths are null"
@@ -392,6 +395,7 @@ Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::TopPaths(
     BeamEntry* e((*branches)[i]);
     paths->push_back(e->LabelSeq(merge_repeated));
     log_probs->push_back(e->newp.total);
+    alignments->push_back(e->TimeStepSeq());
   }
   return Status::OK();
 }
