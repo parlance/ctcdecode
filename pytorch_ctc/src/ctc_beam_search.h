@@ -75,8 +75,8 @@ class CTCBeamSearchDecoder : public CTCDecoder {
   // standard beam search.
   CTCBeamSearchDecoder(int num_classes, int beam_width,
                        BaseBeamScorer<CTCBeamState>* scorer,
-                       int blank_index = 0, bool merge_repeated = false)
-      : CTCDecoder(num_classes, blank_index, merge_repeated),
+                       int blank_index = 0)
+      : CTCDecoder(num_classes, blank_index),
         beam_width_(beam_width),
         leaves_(beam_width),
         // TODO: ADD CHECK_NOTNULL BACK
@@ -117,8 +117,7 @@ class CTCBeamSearchDecoder : public CTCDecoder {
   // Extract the top n paths at current time step
   Status TopPaths(int n, std::vector<std::vector<int>>* paths,
                   std::vector<float>* log_probs,
-                  std::vector<std::vector<int>> *alignments,
-                  bool merge_repeated) const;
+                  std::vector<std::vector<int>> *alignments) const;
 
  private:
   int beam_width_;
@@ -188,8 +187,7 @@ Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Decode(
     }
 
     std::vector<std::vector<int>> beam_alignments;
-    Status status = TopPaths(top_n, &beams, &beam_log_probabilities, &beam_alignments,
-                    merge_repeated_);
+    Status status = TopPaths(top_n, &beams, &beam_log_probabilities, &beam_alignments);
 
     if (!status.ok()) {
       return status;
@@ -365,7 +363,7 @@ void CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Reset() {
 template <typename CTCBeamState, typename CTCBeamComparer>
 Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::TopPaths(
     int n, std::vector<std::vector<int>>* paths, std::vector<float>* log_probs,
-    std::vector<std::vector<int>> *alignments, bool merge_repeated) const {
+    std::vector<std::vector<int>> *alignments) const {
   if (paths == nullptr || log_probs == nullptr) {
     return errors::FailedPrecondition(
       "Internal paths are null"
@@ -393,7 +391,7 @@ Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::TopPaths(
 
   for (int i = 0; i < n; ++i) {
     BeamEntry* e((*branches)[i]);
-    paths->push_back(e->LabelSeq(merge_repeated));
+    paths->push_back(e->LabelSeq());
     log_probs->push_back(e->newp.total);
     alignments->push_back(e->TimeStepSeq());
   }

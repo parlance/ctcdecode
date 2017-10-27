@@ -18,13 +18,12 @@ _import_symbols(locals())
 
 
 class BaseCTCBeamDecoder(object):
-    def __init__(self, labels, top_paths=1, beam_width=10, blank_index=0, space_index=28, merge_repeated=True):
+    def __init__(self, labels, top_paths=1, beam_width=10, blank_index=0, space_index=28):
         self._labels = labels
         self._top_paths = top_paths
         self._beam_width = beam_width
         self._blank_index = blank_index
         self._space_index = space_index
-        self._merge_repeated = merge_repeated
         self._num_classes = len(labels)
         self._decoder = None
 
@@ -96,14 +95,12 @@ class KenLMScorer(BaseScorer):
 
 
 class CTCBeamDecoder(BaseCTCBeamDecoder):
-    def __init__(self, scorer, labels, top_paths=1, beam_width=10, blank_index=0, space_index=28, merge_repeated=True):
+    def __init__(self, scorer, labels, top_paths=1, beam_width=10, blank_index=0, space_index=28):
         super(CTCBeamDecoder, self).__init__(labels, top_paths=top_paths, beam_width=beam_width,
-                                             blank_index=blank_index, space_index=space_index,
-                                             merge_repeated=merge_repeated)
-        merge_int = 1 if merge_repeated else 0
+                                             blank_index=blank_index, space_index=space_index)
         self._scorer = scorer
         self._decoder_type = self._scorer.get_scorer_type()
-        self._decoder = ctc._get_ctc_beam_decoder(self._num_classes, top_paths, beam_width, blank_index, merge_int,
+        self._decoder = ctc._get_ctc_beam_decoder(self._num_classes, top_paths, beam_width, blank_index,
                                                   self._scorer.get_scorer(), self._decoder_type)
 
 
