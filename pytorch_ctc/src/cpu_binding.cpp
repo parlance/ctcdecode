@@ -32,7 +32,7 @@ namespace pytorch {
   float ScoreWord(const Model* model, lm::WordIndex vocab) {
     lm::ngram::State in_state;
     lm::ngram::State out;
-    lm::FullScoreReturn full_score_return; 
+    lm::FullScoreReturn full_score_return;
 
     model->BeginSentenceWrite(&in_state);
     full_score_return = model->BaseFullScore(&in_state, vocab, &out);
@@ -114,13 +114,13 @@ namespace pytorch {
       return static_cast<void *>(beam_scorer);
     }
 
-    void* get_ctc_beam_decoder(int num_classes, int top_paths, int beam_width, int blank_index, int merge_repeated, void *scorer, DecodeType type) {
+    void* get_ctc_beam_decoder(int num_classes, int top_paths, int beam_width, int blank_index, void *scorer, DecodeType type) {
       switch (type) {
         case CTC:
           {
             ctc::CTCBeamSearchDecoder<>::DefaultBeamScorer *beam_scorer = static_cast<ctc::CTCBeamSearchDecoder<>::DefaultBeamScorer *>(scorer);
             ctc::CTCBeamSearchDecoder<> *decoder = new ctc::CTCBeamSearchDecoder<>
-                (num_classes, beam_width, beam_scorer, blank_index, merge_repeated == 1);
+                (num_classes, beam_width, beam_scorer, blank_index);
             return static_cast<void *>(decoder);
           }
         #ifdef INCLUDE_KENLM
@@ -128,7 +128,7 @@ namespace pytorch {
         {
           ctc::KenLMBeamScorer *beam_scorer = static_cast<ctc::KenLMBeamScorer*>(scorer);
           ctc::CTCBeamSearchDecoder<KenLMBeamState> *decoder = new ctc::CTCBeamSearchDecoder<KenLMBeamState>
-              (num_classes, beam_width, beam_scorer, blank_index, merge_repeated == 1);
+              (num_classes, beam_width, beam_scorer, blank_index);
           return static_cast<void *>(decoder);
         }
         #endif

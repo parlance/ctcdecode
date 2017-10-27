@@ -16,7 +16,7 @@ void* get_base_scorer();
 
 /* decoders */
 void* get_ctc_beam_decoder(int num_classes, int top_paths, int beam_width, int blank_index,
-                           int merge_repeated, void *scorer, DecodeType type);
+                           void *scorer, DecodeType type);
 
 
 /* run decoding */

@@ -32,10 +32,9 @@ class CTCDecoder {
   typedef std::vector<std::vector<int>> Output;
   typedef Eigen::Map<Eigen::MatrixXf> ScoreOutput;
 
-  CTCDecoder(int num_classes, int blank_index, bool merge_repeated)
+  CTCDecoder(int num_classes, int blank_index)
       : num_classes_(num_classes),
-        blank_index_(blank_index),
-        merge_repeated_(merge_repeated) {}
+        blank_index_(blank_index) {}
 
   virtual ~CTCDecoder() {}
 
@@ -54,7 +53,6 @@ class CTCDecoder {
  protected:
   int num_classes_;
   int blank_index_;
-  bool merge_repeated_;
 };
 
 // CTCGreedyDecoder is an implementation of the simple best path decoding
@@ -62,7 +60,8 @@ class CTCDecoder {
 class CTCGreedyDecoder : public CTCDecoder {
  public:
   CTCGreedyDecoder(int num_classes, int blank_index, bool merge_repeated)
-      : CTCDecoder(num_classes, blank_index, merge_repeated) {}
+      : CTCDecoder(num_classes, blank_index),
+        merge_repeated_(merge_repeated) {}
 
   Status Decode(const CTCDecoder::SequenceLength& seq_len,
                 std::vector<CTCDecoder::Input>& input,
@@ -101,6 +100,8 @@ class CTCGreedyDecoder : public CTCDecoder {
     }
     return Status::OK();
   }
+ private:
+  bool merge_repeated_;
 };
 
 }  // namespace ctc
