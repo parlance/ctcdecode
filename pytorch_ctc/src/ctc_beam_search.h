@@ -154,7 +154,6 @@ Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Decode(
   // Storage for top paths.
   std::vector<std::vector<int>> beams;
   std::vector<float> beam_log_probabilities;
-  std::vector<std::vector<int>> beam_alignments;
   int top_n = output->size();
   if (std::any_of(output->begin(), output->end(),
                   [batch_size_](const CTCDecoder::Output& output) -> bool {
@@ -188,7 +187,7 @@ Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Decode(
       leaves_.push(entry);
     }
 
-
+    std::vector<std::vector<int>> beam_alignments;
     Status status = TopPaths(top_n, &beams, &beam_log_probabilities, &beam_alignments,
                     merge_repeated_);
 
