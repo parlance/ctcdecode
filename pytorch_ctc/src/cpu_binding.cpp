@@ -71,6 +71,7 @@ namespace pytorch {
     root.WriteToStream(ofs);
     ifs.close();
     ofs.close();
+    delete model;
     return 0;
   }
   #endif
