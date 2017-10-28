@@ -71,6 +71,7 @@ namespace pytorch {
     root.WriteToStream(ofs);
     ifs.close();
     ofs.close();
+    delete model;
     return 0;
   }
   #endif
@@ -86,6 +87,11 @@ namespace pytorch {
       #else
       return nullptr;
       #endif
+    }
+
+    void free_kenlm_scorer(void* kenlm_scorer) {
+      ctc::KenLMBeamScorer* beam_scorer = static_cast<ctc::KenLMBeamScorer*>(kenlm_scorer);
+      delete beam_scorer;
     }
 
     void set_kenlm_scorer_lm_weight(void *scorer, float weight) {

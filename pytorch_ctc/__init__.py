@@ -81,6 +81,11 @@ class KenLMScorer(BaseScorer):
         self._scorer = ctc._get_kenlm_scorer(labels, len(labels), space_index, blank_index, lm_path.encode(),
                                              trie_path.encode())
 
+    # This is a way to make sure the destructor is called for the C++ object
+    # Frees all the member data items that have allocated memory
+    def __del__(self):
+        ctc._free_kenlm_scorer(self._scorer)
+
     def set_lm_weight(self, weight):
         if weight is not None:
             ctc._set_kenlm_scorer_lm_weight(self._scorer, weight)
