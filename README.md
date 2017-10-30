@@ -76,6 +76,16 @@ and returns:
 - `score` is a FloatTensor of log-probabilities representing the likelihood of the transcription with shape `(top_paths, batch_size)`
 - `out_seq_len` is an IntTensor containing the length of the output sequence with shape `(top_paths, batch_size)`
 
+The `CTCBeamDecoder` may be further configured with weights for the label size (`label_size`), and label margin ('label_margin'). These parameters helps to reduce
+the computation time.
+
+Label selection size controls how many items in each beam are passed through to the beam scorer. Only items with top N input scores are considered.
+Label selection margin controls the difference between minimal input score (versus the best scoring label) for an item to be passed to the beam scorer. This margin is expressed in terms of log-probability. Default is to do no label selection.
+
+```python
+decoder.set_label_selection_parameters(label_size=0, label_margin=6)
+```
+
 ### Utilities
 ```python
 generate_lm_dict(dictionary_path, kenlm_path, output_path, labels, blank_index, space_index)
