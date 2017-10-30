@@ -14,7 +14,7 @@ class CTCDecodeTests(unittest.TestCase):
         scorer = pytorch_ctc.Scorer()
         decoder_nomerge = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=1, space_index=-1, top_paths=1, beam_width=1)
 
-        result_nomerge, _, result_nomerge_len, nomerge_alignments = decoder_nomerge.decode(aa, seq_len)
+        result_nomerge, _, result_nomerge_len, nomerge_alignments, _ = decoder_nomerge.decode(aa, seq_len)
         self.assertEqual(result_nomerge_len[0][0], 2)
         self.assertEqual(result_nomerge.numpy()[0,0,:result_nomerge_len[0][0]].tolist(), [0, 0])
 
@@ -26,7 +26,7 @@ class CTCDecodeTests(unittest.TestCase):
         scorer = pytorch_ctc.Scorer()
         decoder_nomerge = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=0, space_index=-1, top_paths=1, beam_width=1)
 
-        result_nomerge, _, result_nomerge_len, nomerge_alignments = decoder_nomerge.decode(aa, seq_len)
+        result_nomerge, _, result_nomerge_len, nomerge_alignments, _ = decoder_nomerge.decode(aa, seq_len)
         self.assertEqual(result_nomerge_len[0][0], 2)
         self.assertEqual(result_nomerge.numpy()[0,0,:result_nomerge_len[0][0]].tolist(), [1, 1])
 
@@ -64,7 +64,7 @@ class CTCDecodeTests(unittest.TestCase):
         scorer = pytorch_ctc.Scorer()
         decoder = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=5, space_index=-1, top_paths=2, beam_width=2)
 
-        decode_result, scores, decode_len, alignments = decoder.decode(th_input, th_seq_len)
+        decode_result, scores, decode_len, alignments, _ = decoder.decode(th_input, th_seq_len)
 
         self.assertEqual(decode_len[0][0], 2)
         self.assertEqual(decode_len[1][0], 3)
@@ -106,7 +106,13 @@ class CTCDecodeTests(unittest.TestCase):
         scorer = pytorch_ctc.Scorer()
         decoder = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=0, space_index=-1, top_paths=2, beam_width=2)
 
-        decode_result, scores, decode_len, alignments = decoder.decode(th_input, th_seq_len)
+        decode_result, scores, decode_len, alignments, char_probs = decoder.decode(th_input, th_seq_len)
+        print(decode_result)
+        print(scores)
+        print("CHAR PROBS")
+        print((char_probs))
+        print(decode_len)
+        self.assertTrue(False)
 
         self.assertEqual(decode_len[0][0], 2)
         self.assertEqual(decode_len[1][0], 3)

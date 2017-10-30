@@ -23,9 +23,9 @@ void* get_ctc_beam_decoder(int num_classes, int top_paths, int beam_width, int b
 
 
 /* run decoding */
-int ctc_beam_decode(void *decoder, DecodeType type,
-                    THFloatTensor *probs, THIntTensor *seq_len, THIntTensor *output,
-                    THFloatTensor *scores, THIntTensor *th_out_len, THIntTensor *th_alignments);
+int ctc_beam_decode(void *decoder, DecodeType type, THFloatTensor *probs,
+                    THIntTensor *seq_len, THIntTensor *output, THFloatTensor *scores,
+                    THIntTensor *th_out_len, THIntTensor *th_alignments, THFloatTensor *char_probs);
 
 
 /* utilities */
