@@ -72,13 +72,19 @@ class Scorer(BaseScorer):
         super(Scorer, self).__init__()
         self._scorer = ctc._get_base_scorer()
 
+class DictScorer(BaseScorer):
+    def __init__(self, labels, trie_path, blank_index=0, space_index=28):
+        super(DictScorer, self).__init__()
+        self._scorer_type = 1
+        self._scorer = ctc._get_dict_scorer(labels, len(labels), space_index, blank_index, trie_path.encode())
+
 
 class KenLMScorer(BaseScorer):
     def __init__(self, labels, lm_path, trie_path, blank_index=0, space_index=28):
         super(KenLMScorer, self).__init__()
         if ctc._kenlm_enabled() != 1:
             raise ImportError("pytorch-ctc not compiled with KenLM support.")
-        self._scorer_type = 1
+        self._scorer_type = 2
         self._scorer = ctc._get_kenlm_scorer(labels, len(labels), space_index, blank_index, lm_path.encode(),
                                              trie_path.encode())
 

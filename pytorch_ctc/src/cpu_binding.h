@@ -1,11 +1,15 @@
 typedef enum {
   CTC,
+  CTC_DICT,
   CTC_KENLM
 } DecodeType ;
 
 
 /* scorers */
 int kenlm_enabled();
+
+void* get_dict_scorer(const wchar_t* label_str, int labels_size, int space_index, int blank_index,
+                      const char* trie_path);
 void* get_kenlm_scorer(const wchar_t* label_str, int labels_size, int space_index, int blank_index,
                        const char* lm_path, const char* trie_path);
 void free_kenlm_scorer(void* kenlm_scorer);

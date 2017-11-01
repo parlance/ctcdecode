@@ -7,6 +7,7 @@
 #include "util/status.h"
 #include "TH.h"
 #include "cpu_binding.h"
+#include "ctc_beam_scorer_dict.h"
 
 #ifdef INCLUDE_KENLM
 #include "ctc_beam_scorer_klm.h"
@@ -17,6 +18,8 @@
 namespace pytorch {
   using pytorch::ctc::Labels;
   using pytorch::ctc::Status;
+  using pytorch::ctc::DictBeamScorer;
+  using pytorch::ctc::ctc_beam_search::DictBeamState;
 
   #ifdef INCLUDE_KENLM
   using pytorch::ctc::KenLMBeamScorer;
@@ -94,6 +97,13 @@ namespace pytorch {
       delete beam_scorer;
     }
 
+    void* get_dict_scorer(const wchar_t* label_str, int labels_size, int space_index, int blank_index,
+                          const char* trie_path) {
+      Labels* labels = new Labels(label_str, labels_size, blank_index, space_index);
+      ctc::DictBeamScorer *beam_scorer = new ctc::DictBeamScorer(labels, trie_path);
+      return static_cast<void*>(beam_scorer);
+    }
+
     void set_kenlm_scorer_lm_weight(void *scorer, float weight) {
       #ifdef INCLUDE_KENLM
       ctc::KenLMBeamScorer *beam_scorer = static_cast<ctc::KenLMBeamScorer *>(scorer);
@@ -128,12 +138,19 @@ namespace pytorch {
     void* get_ctc_beam_decoder(int num_classes, int top_paths, int beam_width, int blank_index, void *scorer, DecodeType type) {
       switch (type) {
         case CTC:
-          {
-            ctc::CTCBeamSearchDecoder<>::DefaultBeamScorer *beam_scorer = static_cast<ctc::CTCBeamSearchDecoder<>::DefaultBeamScorer *>(scorer);
-            ctc::CTCBeamSearchDecoder<> *decoder = new ctc::CTCBeamSearchDecoder<>
-                (num_classes, beam_width, beam_scorer, blank_index);
-            return static_cast<void *>(decoder);
-          }
+        {
+          ctc::CTCBeamSearchDecoder<>::DefaultBeamScorer *beam_scorer = static_cast<ctc::CTCBeamSearchDecoder<>::DefaultBeamScorer *>(scorer);
+          ctc::CTCBeamSearchDecoder<> *decoder = new ctc::CTCBeamSearchDecoder<>
+              (num_classes, beam_width, beam_scorer, blank_index);
+          return static_cast<void *>(decoder);
+        }
+        case CTC_DICT:
+        {
+          ctc::DictBeamScorer *beam_scorer = static_cast<ctc::DictBeamScorer *>(scorer);
+          ctc::CTCBeamSearchDecoder<DictBeamState> *decoder = new ctc::CTCBeamSearchDecoder<DictBeamState>
+              (num_classes, beam_width, beam_scorer, blank_index);
+          return static_cast<void *>(decoder);
+        }
         #ifdef INCLUDE_KENLM
         case CTC_KENLM:
         {
@@ -195,6 +212,16 @@ namespace pytorch {
         case CTC:
           {
             ctc::CTCBeamSearchDecoder<> *decoder = static_cast<ctc::CTCBeamSearchDecoder<> *>(void_decoder);
+            scores = new Eigen::Map<Eigen::MatrixXf>(&score[0][0], batch_size, decoder->GetBeamWidth());
+            Status stat = decoder->Decode(seq_len, inputs, &outputs, scores, &alignments, &char_probs);
+            if (!stat.ok()) {
+              return 0;
+            }
+          }
+          break;
+          case CTC_DICT:
+          {
+            ctc::CTCBeamSearchDecoder<DictBeamState> *decoder = static_cast<ctc::CTCBeamSearchDecoder<DictBeamState> *>(void_decoder);
             scores = new Eigen::Map<Eigen::MatrixXf>(&score[0][0], batch_size, decoder->GetBeamWidth());
             Status stat = decoder->Decode(seq_len, inputs, &outputs, scores, &alignments, &char_probs);
             if (!stat.ok()) {
