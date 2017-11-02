@@ -35,3 +35,6 @@ int ctc_beam_decode(void *decoder, DecodeType type, THFloatTensor *probs,
 /* utilities */
 int generate_lm_dict(const wchar_t* labels, int size, int blank_index, int space_index,
                      const char* lm_path, const char* dictionary_path, const char* output_path);
+
+int generate_dict(const wchar_t* labels, int size, int blank_index, int space_index,
+                  const char* dictionary_path, const char* output_path);

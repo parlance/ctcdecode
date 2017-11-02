@@ -43,7 +43,7 @@ namespace pytorch {
     return full_score_return.prob;
   }
 
-  int generate_dictionary(Labels& labels, const char* kenlm_path, const char* vocab_path, const char* trie_path) {
+  int generate_klm_dict_trie(Labels& labels, const char* kenlm_path, const char* vocab_path, const char* trie_path) {
     lm::ngram::Config config;
     config.load_method = util::POPULATE_OR_READ;
     Model* model = lm::ngram::LoadVirtual(kenlm_path, config);
@@ -78,6 +78,35 @@ namespace pytorch {
     return 0;
   }
   #endif
+
+  int generate_dict_trie(Labels& labels, const char* vocab_path, const char* trie_path) {
+    std::ifstream ifs;
+    ifs.open(vocab_path, std::ifstream::in);
+
+    ctc::TrieNode root(labels.GetSize());
+
+    if (!ifs.is_open()) {
+      std::cout << "unable to open vocabulary" << std::endl;
+      return -1;
+    }
+
+    std::ofstream ofs;
+    ofs.open(trie_path);
+
+    std::string word;
+    int i = 0;
+    while (ifs >> word) {
+      std::wstring wide_word;
+      utf8::utf8to16(word.begin(), word.end(), std::back_inserter(wide_word));
+      root.Insert(wide_word.c_str(), [&labels](wchar_t c) {
+                    return labels.GetLabel(c);
+                  }, i++, 0);
+    }
+    root.WriteToStream(ofs);
+    ifs.close();
+    ofs.close();
+    return 0;
+  }
 
   extern "C"
   {
@@ -272,11 +301,18 @@ namespace pytorch {
                          const char* lm_path, const char* dictionary_path, const char* output_path) {
         #ifdef INCLUDE_KENLM
         Labels labels(label_str, size, blank_index, space_index);
-        return generate_dictionary(labels, lm_path, dictionary_path, output_path);
+        return generate_klm_dict_trie(labels, lm_path, dictionary_path, output_path);
         #else
         return -1;
         #endif
     }
+
+    int generate_dict(const wchar_t* label_str, int size, int blank_index, int space_index,
+                         const char* dictionary_path, const char* output_path) {
+        Labels labels(label_str, size, blank_index, space_index);
+        return generate_dict_trie(labels, dictionary_path, output_path);
+    }
+
 
     int kenlm_enabled() {
       #ifdef INCLUDE_KENLM

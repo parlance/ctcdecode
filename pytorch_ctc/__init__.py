@@ -119,11 +119,15 @@ class CTCBeamDecoder(BaseCTCBeamDecoder):
         ctc._set_label_selection_parameters(self._decoder, label_size, label_margin)
 
 
-def generate_lm_dict(dictionary_path, kenlm_path, output_path, labels, blank_index=0, space_index=28):
-    if ctc._kenlm_enabled() != 1:
+def generate_lm_dict(dictionary_path, output_path, labels, kenlm_path=None, blank_index=0, space_index=28):
+    if kenlm_path is not None and ctc._kenlm_enabled() != 1:
         raise ImportError("pytorch-ctc not compiled with KenLM support.")
-    result = ctc._generate_lm_dict(labels, len(labels), blank_index, space_index, kenlm_path.encode(),
-                                   dictionary_path.encode(), output_path.encode())
-
+    result = None
+    if kenlm_path is not None:
+        result = ctc._generate_lm_dict(labels, len(labels), blank_index, space_index, kenlm_path.encode(),
+                                       dictionary_path.encode(), output_path.encode())
+    else:
+        result = ctc._generate_dict(labels, len(labels), blank_index, space_index,
+                                    dictionary_path.encode(), output_path.encode())
     if result != 0:
         raise ValueError("Error encountered generating dictionary")

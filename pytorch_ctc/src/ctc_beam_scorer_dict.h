@@ -85,7 +85,13 @@ namespace ctc_beam_search {
 
       if (labels_->IsSpace(to_label)) {
         std::cout << "In  IsSpace block" << std::endl;
+        //std::wcout << "Old: " << from_state.word_prefix << "; freq=" << from_state.trie_node.GetFrequency() << "; minScoreWordIndex=" << from_state.trie_node.GetMinScoreWordIndex() << "; minUnigramScore" << from_state.trie_node.GetMinUnigramScore() << std::endl;
+        //std::wcout << "New: " << to_state->word_prefix << "; freq=" << to_state->trie_node.GetFrequency() << "; minScoreWordIndex=" << to_state->trie_node.GetMinScoreWordIndex() << "; minUnigramScore" << to_state->trie_node.GetMinUnigramScore() << std::endl;
+        std::wcout << "Old: " << from_state.word_prefix << "; freq=" << from_state.trie_node->GetFrequency() << "; minScoreWordIndex=" << from_state.trie_node->GetMinScoreWordIndex() << "; minUnigramScore=" << from_state.trie_node->GetMinUnigramScore() << "; score=" << from_state.ngram_score << std::endl;
+
         to_state->ngram_score = (from_state.trie_node != nullptr) ? 0 : -1000;
+        std::wcout << "New: " << to_state->word_prefix << "; freq=" << to_state->trie_node->GetFrequency() << "; minScoreWordIndex=" << to_state->trie_node->GetMinScoreWordIndex() << "; minUnigramScore=" << to_state->trie_node->GetMinUnigramScore() << "; score=" << to_state->ngram_score << std::endl;
+
         to_state->word_prefix.clear();
         to_state->trie_node = trie_root_;
       } else {
@@ -95,10 +101,12 @@ namespace ctc_beam_search {
         if (from_state.trie_node == nullptr) {
           to_state->trie_node = nullptr;
           to_state->ngram_score = -1000;
+          std::wcout << "Impossible beam: " << to_state->word_prefix << std::endl;
         } else {
 
           to_state->trie_node = from_state.trie_node->GetChildAt(to_label);
           to_state->ngram_score = (to_state->trie_node != nullptr) ? 0 : -1000;
+          std::wcout << "Possible beam: " << to_state->word_prefix << "; score: " << to_state->ngram_score << std::endl;
         }
       }
     }
@@ -107,7 +115,7 @@ namespace ctc_beam_search {
     // allow a final scoring of the beam in its current state, before resorting
     // and retrieving the TopN requested candidates. Called at most once per beam.
     void ExpandStateEnd(DictBeamState* state) const {
-      std::cout << "ExpandStateEnd" << std::endl;
+      std::wcout << "ExpandStateEnd: " << state->word_prefix << std::endl;
       state->word_prefix.clear();
       state->trie_node = trie_root_;
     }
