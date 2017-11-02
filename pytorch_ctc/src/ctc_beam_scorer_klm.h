@@ -92,17 +92,26 @@ namespace ctc_beam_search {
           ++to_state->num_words;
         }
 
+        if (IsWord(from_state.word_prefix)){
+
           //std::wcout << "trying to score: " << from_state.word_prefix << "; num_words: " << to_state->num_words << std::endl;
           to_state->ngram_score = ScoreNewWord(from_state.ngram_state, from_state.word_prefix,
                                                &to_state->ngram_state);
         //  for (int i=0; i < (int)to_state->ngram_state.Length(); ++i) {
         //    std::cout << "    " << to_state->ngram_state.words[i] << std::endl;
         //  }
-        to_state->word_prefix.clear();
+        } else {
+          to_state->ngram_score = default_min_unigram_;
+        }
       } else {
         // not at a space, so we don't want to score anything
-        to_state->ngram_score = 0;
         to_state->word_prefix += labels_->GetCharacter(to_label);
+        to_state.ngram_state = from_state.ngram_state;
+        if(IsPrefix(to_state.word_prefix)){
+          to_state->ngram_score = 0;
+        } else {
+          to_state->ngram_score = default_min_unigram_;
+        }
       }
     }
 
@@ -111,13 +120,16 @@ namespace ctc_beam_search {
     // and retrieving the TopN requested candidates. Called at most once per beam.
     void ExpandStateEnd(KenLMBeamState* state) const {
       if (!state->word_prefix.empty()) {
-        ++state->num_words;
+        if (IsWord(from_state.word_prefix)){
+          ++state->num_words;
+          lm::ngram::State to_ngram_state;
+          state->ngram_score = ScoreNewWord(state->ngram_state, state->word_prefix, &to_ngram_state);
+        } else {
+          state->ngram_score = default_min_unigram_;
+        }
+      } else {
+        state->ngram_score = 0;
       }
-
-      lm::ngram::State to_ngram_state;
-      state->ngram_score = ScoreNewWord(state->ngram_state, state->word_prefix, &to_ngram_state);
-      state->ngram_state = to_ngram_state;
-      state->word_prefix.clear();
     }
 
     // GetStateExpansionScore should be an inexpensive method to retrieve the
@@ -172,6 +184,17 @@ namespace ctc_beam_search {
         return model_->BaseScore(&from_ngram_state,
                                  model_->BaseVocabulary().Index(encoded_word),
                                  to_ngram_state);
+    }
+
+    bool IsPrefix(const std::wstring& prefix) const {
+      //TODO
+    }
+
+    bool IsWord(const std::wstring& word) const {
+      std::string encoded_word;
+      utf8::utf16to8(word.begin(), word.end(), std::back_inserter(encoded_word));
+      auto &vocabulary = model->BaseVocabulary();
+      return vocabulary.Index(encoded_word) != vocabulary.NotFound();
     }
   };
 
