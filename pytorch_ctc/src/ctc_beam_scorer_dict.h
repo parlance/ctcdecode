@@ -36,6 +36,7 @@ namespace ctc_beam_search {
     float ngram_score;
     std::wstring word_prefix;
     TrieNode *trie_node;
+    float num_words;
   };
 }
 
@@ -48,9 +49,12 @@ namespace ctc_beam_search {
       delete trie_root_;
     }
 
-    DictBeamScorer(Labels *labels, const char *trie_path) {
-      this->labels_ = labels;
-
+    DictBeamScorer(Labels *labels, const char *trie_path) :
+        labels_(labels),
+        default_miss_prob_(-1000.0f),
+        word_insertion_weight_(1.1),
+        ngram_model_weight_(2)
+    {
       std::ifstream in;
       in.open(trie_path, std::ios::in);
       TrieNode::ReadFromStream(in, trie_root_, labels_->GetSize());
@@ -59,10 +63,11 @@ namespace ctc_beam_search {
 
     // State initialization.
     void InitializeState(DictBeamState* root) const {
-      std::cout << "InitializeState" << std::endl;
+      //std::cout << "InitializeState" << std::endl;
       root->word_prefix.clear();
       root->trie_node = trie_root_;
       root->ngram_score = 0.0f;
+      root->num_words = 0;
     }
 
     // void CopyState(const KenLMBeamState& from, KenLMBeamState* to) const {
@@ -79,34 +84,40 @@ namespace ctc_beam_search {
     void ExpandState(const DictBeamState& from_state, int from_label,
                            DictBeamState* to_state, int to_label) const {
       (void)from_label; // unused
-      std::cout << "ExpandState" << std::endl;
+      //std::cout << "ExpandState" << std::endl;
       //CopyState(from_state, to_state);
       (*to_state) = from_state;
 
       if (labels_->IsSpace(to_label)) {
-        std::cout << "In  IsSpace block" << std::endl;
+        if (!from_state.word_prefix.empty()) {
+          ++to_state->num_words;
+        }
+        //std::cout << "In  IsSpace block" << std::endl;
         //std::wcout << "Old: " << from_state.word_prefix << "; freq=" << from_state.trie_node.GetFrequency() << "; minScoreWordIndex=" << from_state.trie_node.GetMinScoreWordIndex() << "; minUnigramScore" << from_state.trie_node.GetMinUnigramScore() << std::endl;
         //std::wcout << "New: " << to_state->word_prefix << "; freq=" << to_state->trie_node.GetFrequency() << "; minScoreWordIndex=" << to_state->trie_node.GetMinScoreWordIndex() << "; minUnigramScore" << to_state->trie_node.GetMinUnigramScore() << std::endl;
-        std::wcout << "Old: " << from_state.word_prefix << "; freq=" << from_state.trie_node->GetFrequency() << "; minScoreWordIndex=" << from_state.trie_node->GetMinScoreWordIndex() << "; minUnigramScore=" << from_state.trie_node->GetMinUnigramScore() << "; score=" << from_state.ngram_score << std::endl;
+        //std::wcout << "Old: " << from_state.word_prefix << "; freq=" << from_state.trie_node->GetFrequency() << "; minScoreWordIndex=" << from_state.trie_node->GetMinScoreWordIndex() << "; minUnigramScore=" << from_state.trie_node->GetMinUnigramScore() << "; score=" << from_state.ngram_score << std::endl;
 
-        to_state->ngram_score = (from_state.trie_node != nullptr) ? 0 : -1000;
-        std::wcout << "New: " << to_state->word_prefix << "; freq=" << to_state->trie_node->GetFrequency() << "; minScoreWordIndex=" << to_state->trie_node->GetMinScoreWordIndex() << "; minUnigramScore=" << to_state->trie_node->GetMinUnigramScore() << "; score=" << to_state->ngram_score << std::endl;
+        to_state->ngram_score = (from_state.trie_node->GetIsWord()) ? 0 : default_miss_prob_;
+        // if (from_state.trie_node->GetIsWord()) {
+        //   std::wcout << to_state->word_prefix << ": " << to_state->ngram_score << std::endl;
+        // }
+        //std::wcout << "New: " << to_state->word_prefix << "; freq=" << to_state->trie_node->GetFrequency() << "; minScoreWordIndex=" << to_state->trie_node->GetMinScoreWordIndex() << "; minUnigramScore=" << to_state->trie_node->GetMinUnigramScore() << "; score=" << to_state->ngram_score << std::endl;
 
         to_state->word_prefix.clear();
         to_state->trie_node = trie_root_;
       } else {
-        std::cout << "In !IsSpace block" << std::endl;
+        //std::cout << "In !IsSpace block" << std::endl;
         // not at a space, so we don't want to score anything
         to_state->word_prefix += labels_->GetCharacter(to_label);
         if (from_state.trie_node == nullptr) {
           to_state->trie_node = nullptr;
-          to_state->ngram_score = -1000;
-          std::wcout << "Impossible beam: " << to_state->word_prefix << std::endl;
+          to_state->ngram_score = default_miss_prob_;
+          //std::wcout << "Impossible beam: " << to_state->word_prefix << std::endl;
         } else {
 
           to_state->trie_node = from_state.trie_node->GetChildAt(to_label);
-          to_state->ngram_score = (to_state->trie_node != nullptr) ? 0 : -1000;
-          std::wcout << "Possible beam: " << to_state->word_prefix << "; score: " << to_state->ngram_score << std::endl;
+          to_state->ngram_score = (to_state->trie_node != nullptr) ? 0 : default_miss_prob_;
+          //std::wcout << "Possible beam: " << to_state->word_prefix << "; score: " << to_state->ngram_score << std::endl;
         }
       }
     }
@@ -115,7 +126,7 @@ namespace ctc_beam_search {
     // allow a final scoring of the beam in its current state, before resorting
     // and retrieving the TopN requested candidates. Called at most once per beam.
     void ExpandStateEnd(DictBeamState* state) const {
-      std::wcout << "ExpandStateEnd: " << state->word_prefix << std::endl;
+      //std::wcout << "ExpandStateEnd: " << state->word_prefix << std::endl;
       state->word_prefix.clear();
       state->trie_node = trie_root_;
     }
@@ -129,8 +140,8 @@ namespace ctc_beam_search {
     // there's no state expansion logic, the expansion score is zero.
     float GetStateExpansionScore(const DictBeamState& state,
                                  float previous_score) const {
-                                   std::cout << "GetStateExpansionScore" << std::endl;
-      return previous_score + state.ngram_score;
+                                   //std::cout << "GetStateExpansionScore" << std::endl;
+       return previous_score + state.ngram_score;
     }
     // GetStateEndExpansionScore should be an inexpensive method to retrieve the
     // (cached) expansion score computed within ExpandStateEnd. The score is
@@ -139,13 +150,16 @@ namespace ctc_beam_search {
     // The score returned should be a log-probability.
     float GetStateEndExpansionScore(const DictBeamState& state) const {
       //std::cout << "GetStateEndExpansionScore" << std::endl;
-        std::cout << "GetStateEndExpansionScore" << std::endl;
-      return state.ngram_score;
+        //std::cout << "GetStateEndExpansionScore" << std::endl;
+        return state.ngram_score;
     }
 
    private:
     Labels *labels_;
     TrieNode *trie_root_;
+    float default_miss_prob_;
+    float ngram_model_weight_;
+    float word_insertion_weight_;
   };
 
 }  // namespace ctc
