@@ -55,7 +55,7 @@ namespace ctc_beam_search {
     KenLMBeamScorer(Labels *labels, const char *kenlm_path, const char *trie_path)
                       : ngram_model_weight_(1.0f),
                         word_insertion_weight_(1.0f),
-                        default_min_unigram_(-1000.0f) {
+                        default_min_unigram_(kLogZero) {
       lm::ngram::Config config;
       config.load_method = util::POPULATE_OR_READ;
       model_ = lm::ngram::LoadVirtual(kenlm_path, config);
@@ -92,7 +92,7 @@ namespace ctc_beam_search {
           ++to_state->num_words;
         }
 
-        if (IsWord(from_state.word_prefix)){
+        if (IsWord(from_state.word_prefix)) {
 
           //std::wcout << "trying to score: " << from_state.word_prefix << "; num_words: " << to_state->num_words << std::endl;
           to_state->ngram_score = ScoreNewWord(from_state.ngram_state, from_state.word_prefix,
@@ -106,8 +106,8 @@ namespace ctc_beam_search {
       } else {
         // not at a space, so we don't want to score anything
         to_state->word_prefix += labels_->GetCharacter(to_label);
-        to_state.ngram_state = from_state.ngram_state;
-        if(IsPrefix(to_state.word_prefix)){
+        to_state->ngram_state = from_state.ngram_state;
+        if(IsPrefix(to_state->word_prefix)){
           to_state->ngram_score = 0;
         } else {
           to_state->ngram_score = default_min_unigram_;
@@ -120,7 +120,7 @@ namespace ctc_beam_search {
     // and retrieving the TopN requested candidates. Called at most once per beam.
     void ExpandStateEnd(KenLMBeamState* state) const {
       if (!state->word_prefix.empty()) {
-        if (IsWord(from_state.word_prefix)){
+        if (IsWord(state->word_prefix)){
           ++state->num_words;
           lm::ngram::State to_ngram_state;
           state->ngram_score = ScoreNewWord(state->ngram_state, state->word_prefix, &to_ngram_state);
@@ -187,13 +187,27 @@ namespace ctc_beam_search {
     }
 
     bool IsPrefix(const std::wstring& prefix) const {
-      //TODO
+      std::wcout << "Checking IsPrefix on: " << prefix << std::endl;
+      TrieNode *tn = trie_root_;
+      for (const wchar_t c : prefix) {
+        if (c == '\0') {
+          break;
+        }
+        int to_label = labels_->GetLabel(c);
+        tn = tn->GetChildAt(to_label);
+        if (tn == nullptr) {
+          std::wcout << "Checking IsPrefix on: " << prefix << " returns FALSE" << std::endl;
+          return false;
+        }
+      }
+      std::wcout << "Checking IsPrefix on: " << prefix << " returns TRUE" << std::endl;
+      return true;
     }
 
     bool IsWord(const std::wstring& word) const {
       std::string encoded_word;
       utf8::utf16to8(word.begin(), word.end(), std::back_inserter(encoded_word));
-      auto &vocabulary = model->BaseVocabulary();
+      auto &vocabulary = model_->BaseVocabulary();
       return vocabulary.Index(encoded_word) != vocabulary.NotFound();
     }
   };
