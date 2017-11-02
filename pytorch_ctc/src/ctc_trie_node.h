@@ -13,12 +13,18 @@ limitations under the License.
 #ifndef CTC_TRIENODE_H
 #define CTC_TRIENODE_H
 
-#include "lm/model.hh"
-
 #include <functional>
 #include <istream>
 #include <iostream>
 #include <limits>
+
+#ifdef INCLUDE_KENLM
+#include "lm/model.hh"
+#else
+namespace lm {
+  typedef int WordIndex;
+}
+#endif
 
 namespace pytorch {
 namespace ctc {

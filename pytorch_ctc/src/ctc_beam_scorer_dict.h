@@ -18,8 +18,8 @@ limitations under the License.
 // BeamScorerInterface. The default CTC decoding behavior is implemented
 // through BaseBeamScorer.
 
-#ifndef PYTORCH_CONTRIB_CTC_CTC_BEAM_SCORER_KLM_H_
-#define PYTORCH_CONTRIB_CTC_CTC_BEAM_SCORER_KLM_H_
+#ifndef PYTORCH_CONTRIB_CTC_CTC_BEAM_SCORER_DICT_H_
+#define PYTORCH_CONTRIB_CTC_CTC_BEAM_SCORER_DICT_H_
 
 #include "ctc_beam_entry.h"
 #include "ctc_labels.h"
@@ -143,4 +143,4 @@ namespace ctc_beam_search {
 }  // namespace ctc
 }  // namespace pytorch
 
-#endif  // PYTORCH_CONTRIB_CTC_CTC_BEAM_SCORER_KLM_H_
+#endif  // PYTORCH_CONTRIB_CTC_CTC_BEAM_SCORER_DICT_H_
