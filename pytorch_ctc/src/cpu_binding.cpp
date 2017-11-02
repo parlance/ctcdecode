@@ -122,8 +122,11 @@ namespace pytorch {
     }
 
     void free_kenlm_scorer(void* kenlm_scorer) {
+      #ifdef INCLUDE_KENLM
       ctc::KenLMBeamScorer* beam_scorer = static_cast<ctc::KenLMBeamScorer*>(kenlm_scorer);
       delete beam_scorer;
+      #endif
+      return;
     }
 
     void* get_dict_scorer(const wchar_t* label_str, int labels_size, int space_index, int blank_index,
