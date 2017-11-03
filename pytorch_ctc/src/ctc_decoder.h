@@ -29,6 +29,7 @@ class CTCDecoder {
  public:
   typedef Eigen::Map<const Eigen::ArrayXi> SequenceLength;
   typedef Eigen::Map<Eigen::MatrixXf, 0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic> > Input;
+  typedef std::vector<std::vector<float>> CharProbability;
   typedef std::vector<std::vector<int>> Output;
   typedef Eigen::Map<Eigen::MatrixXf> ScoreOutput;
 
@@ -46,7 +47,8 @@ class CTCDecoder {
   virtual Status Decode(const SequenceLength& seq_len,
                         std::vector<Input>& input,
                         std::vector<Output>* output, ScoreOutput* scores,
-                        std::vector<Output> *alignment) = 0;
+                        std::vector<Output> *alignment,
+                        std::vector<CTCDecoder::CharProbability>* char_probs) = 0;
 
   int num_classes() { return num_classes_; }
 
@@ -67,7 +69,8 @@ class CTCGreedyDecoder : public CTCDecoder {
                 std::vector<CTCDecoder::Input>& input,
                 std::vector<CTCDecoder::Output>* output,
                 CTCDecoder::ScoreOutput* scores,
-                std::vector<CTCDecoder::Output> *alignment) override {
+                std::vector<CTCDecoder::Output> *alignment,
+                std::vector<CTCDecoder::CharProbability>* char_probs) override {
     int batch_size_ = input[0].cols();
     if (output->empty() || (*output)[0].size() < batch_size_) {
       return errors::InvalidArgument(
@@ -82,18 +85,21 @@ class CTCGreedyDecoder : public CTCDecoder {
       int seq_len_b = seq_len[b];
       // Only writing to beam 0
       std::vector<int>& output_b = (*output)[0][b];
-      std::vector<int> &alignment_b = (*alignment)[0][b];
+      std::vector<int>& alignment_b = (*alignment)[0][b];
+      std::vector<float>& char_probs_b = (*char_probs)[0][b];
 
       int prev_class_ix = -1;
       (*scores)(b, 0) = 0;
       for (int t = 0; t < seq_len_b; ++t) {
         auto row = input[t].row(b);
         int max_class_ix;
-        (*scores)(b, 0) += -row.maxCoeff(&max_class_ix);
+        float conf = -row.maxCoeff(&max_class_ix);
+        (*scores)(b, 0) += conf;
         if (max_class_ix != blank_index_ &&
             !(merge_repeated_ && max_class_ix == prev_class_ix)) {
           output_b.push_back(max_class_ix);
           alignment_b.push_back(t);
+          char_probs_b.push_back(conf);
         }
         prev_class_ix = max_class_ix;
       }

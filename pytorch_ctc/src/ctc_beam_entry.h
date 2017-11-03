@@ -92,11 +92,9 @@ struct BeamEntry {
   }
   std::vector<int> LabelSeq() const {
     std::vector<int> labels;
-    int prev_label = -1;
     const BeamEntry* c = this;
     while (c->parent != nullptr) {  // Checking c->parent to skip root leaf.
       labels.push_back(c->label);
-      prev_label = c->label;
       c = c->parent;
     }
     std::reverse(labels.begin(), labels.end());
@@ -105,15 +103,25 @@ struct BeamEntry {
 
   std::vector<int> TimeStepSeq() const {
     std::vector<int> time_steps;
-    int prev_label = -1;
     const BeamEntry *c = this;
     while (c->parent != nullptr) {  // Checking c->parent to skip root leaf.
       time_steps.push_back(c->time_step);
-      prev_label = c->label;
       c = c->parent;
     }
     std::reverse(time_steps.begin(), time_steps.end());
     return time_steps;
+  }
+
+  std::vector<float> CharProbSeq() const {
+    std::vector<float> probs;
+    float prev_prob = kLogZero;
+    const BeamEntry *c = this;
+    while (c->parent != nullptr) {  // Checking c->parent to skip root leaf.
+      probs.push_back(c->oldp.total);
+      c = c->parent;
+    }
+    std::reverse(probs.begin(), probs.end());
+    return probs;
   }
 
   BeamEntry<CTCBeamState>* parent;

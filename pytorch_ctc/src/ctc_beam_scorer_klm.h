@@ -34,12 +34,11 @@ namespace pytorch {
 namespace ctc {
 namespace ctc_beam_search {
   struct KenLMBeamState {
-    float language_model_score;
-    float score;
-    float delta_score;
-    std::wstring incomplete_word;
-    TrieNode *incomplete_word_trie_node;
-    lm::ngram::State model_state;
+    float ngram_score;
+    int num_words;
+    std::wstring word_prefix;
+    TrieNode *trie_node;
+    lm::ngram::State ngram_state;
   };
 }
 
@@ -49,95 +48,78 @@ namespace ctc_beam_search {
    public:
 
     ~KenLMBeamScorer() {
-      delete model;
-      delete trieRoot;
-      delete labels;
+      delete model_;
+      delete trie_root_;
+      delete labels_;
     }
     KenLMBeamScorer(Labels *labels, const char *kenlm_path, const char *trie_path)
-                      : lm_weight(1.0f),
-                        word_count_weight(0.0f),
-                        valid_word_count_weight(1.0f) {
+                      : ngram_model_weight_(1.0f),
+                        word_insertion_weight_(1.0f),
+                        default_min_unigram_(-1000.0f) {
       lm::ngram::Config config;
       config.load_method = util::POPULATE_OR_READ;
-      model = lm::ngram::LoadVirtual(kenlm_path, config);
-      this->labels = labels;
+      model_ = lm::ngram::LoadVirtual(kenlm_path, config);
+      this->labels_ = labels;
 
       std::ifstream in;
       in.open(trie_path, std::ios::in);
-      TrieNode::ReadFromStream(in, trieRoot, labels->GetSize());
+      TrieNode::ReadFromStream(in, trie_root_, labels_->GetSize());
       in.close();
     }
 
     // State initialization.
     void InitializeState(KenLMBeamState* root) const {
-      root->language_model_score = 0.0f;
-      root->score = 0.0f;
-      root->delta_score = 0.0f;
-      root->incomplete_word.clear();
-      root->incomplete_word_trie_node = trieRoot;
-      model->BeginSentenceWrite(&root->model_state);
+      //std::cout << "InitializeState" << std::endl;
+      root->ngram_score = 0.0f;
+      root->num_words = 0;
+      root->word_prefix.clear();
+      //model->BeginSentenceWrite(&root->ngram_state);
+      model_->NullContextWrite(&root->ngram_state);
     }
+
     // ExpandState is called when expanding a beam to one of its children.
     // Called at most once per child beam. In the simplest case, no state
     // expansion is done.
     void ExpandState(const KenLMBeamState& from_state, int from_label,
-                             KenLMBeamState* to_state, int to_label) const {
-      CopyState(from_state, to_state);
+                           KenLMBeamState* to_state, int to_label) const {
+      (void)from_label; // unused
+      //CopyState(from_state, to_state);
+      (*to_state) = from_state;
 
-      //if (!labels->IsSpace(to_label) && !labels->IsBlank(to_label)) {
-      if (!labels->IsSpace(to_label)) {
-        to_state->incomplete_word += labels->GetCharacter(to_label);
-        TrieNode *trie_node = from_state.incomplete_word_trie_node;
-
-        // TODO replace with OOV unigram prob?
-        // If we have no valid prefix we assume a very low log probability
-        float min_unigram_score = -1000.0f;
-        // If prefix does exist
-        if (trie_node != nullptr) {
-          trie_node = trie_node->GetChildAt(to_label);
-          to_state->incomplete_word_trie_node = trie_node;
-
-          if (trie_node != nullptr) {
-            min_unigram_score = trie_node->GetMinUnigramScore();
-          }
+      if (labels_->IsSpace(to_label)) {
+        // if there are words already (ie this isnt just whitespace) increment word count
+        if (!from_state.word_prefix.empty()) {
+          ++to_state->num_words;
         }
-        // TODO try two options
-        // 1) unigram score added up to language model scare
-        // 2) langugage model score of (preceding_words + unigram_word)
-        to_state->score = min_unigram_score + to_state->language_model_score;
-        to_state->delta_score = to_state->score - from_state.score;
 
+          //std::wcout << "trying to score: " << from_state.word_prefix << "; num_words: " << to_state->num_words << std::endl;
+          to_state->ngram_score = ScoreNewWord(from_state.ngram_state, from_state.word_prefix,
+                                               &to_state->ngram_state);
+        //  for (int i=0; i < (int)to_state->ngram_state.Length(); ++i) {
+        //    std::cout << "    " << to_state->ngram_state.words[i] << std::endl;
+        //  }
+        to_state->word_prefix.clear();
       } else {
-        float lm_score_delta = ScoreIncompleteWord(from_state.model_state,
-                              to_state->incomplete_word,
-                              to_state->model_state);
-        // Give fixed word bonus
-        if (!IsOOV(to_state->incomplete_word)) {
-          to_state->language_model_score += valid_word_count_weight;
-        }
-        to_state->language_model_score += word_count_weight;
-        UpdateWithLMScore(to_state, lm_score_delta);
-        ResetIncompleteWord(to_state);
+        // not at a space, so we don't want to score anything
+        to_state->ngram_score = 0;
+        to_state->word_prefix += labels_->GetCharacter(to_label);
       }
     }
+
     // ExpandStateEnd is called after decoding has finished. Its purpose is to
     // allow a final scoring of the beam in its current state, before resorting
     // and retrieving the TopN requested candidates. Called at most once per beam.
     void ExpandStateEnd(KenLMBeamState* state) const {
-      float lm_score_delta = 0.0f;
-      lm::ngram::State out;
-      if (state->incomplete_word.size() > 0) {
-        lm_score_delta += ScoreIncompleteWord(state->model_state,
-                                              state->incomplete_word,
-                                              out);
-        ResetIncompleteWord(state);
-        state->model_state = out;
+      if (!state->word_prefix.empty()) {
+        ++state->num_words;
       }
-      lm_score_delta += model->BaseFullScore(&state->model_state,
-                                        model->BaseVocabulary().EndSentence(),
-                                        &out).prob;
-      UpdateWithLMScore(state, lm_score_delta);
+
+      lm::ngram::State to_ngram_state;
+      state->ngram_score = ScoreNewWord(state->ngram_state, state->word_prefix, &to_ngram_state);
+      state->ngram_state = to_ngram_state;
+      state->word_prefix.clear();
     }
+
     // GetStateExpansionScore should be an inexpensive method to retrieve the
     // (cached) expansion score computed within ExpandState. The score is
     // multiplied (log-addition) with the input score at the current step from
@@ -146,8 +128,9 @@ namespace ctc_beam_search {
     // The score returned should be a log-probability. In the simplest case, as
     // there's no state expansion logic, the expansion score is zero.
     float GetStateExpansionScore(const KenLMBeamState& state,
-                                         float previous_score) const {
-      return lm_weight * state.delta_score + previous_score;
+                                 float previous_score) const {
+      return previous_score + ngram_model_weight_*state.ngram_score +
+             word_insertion_weight_ * state.num_words;
     }
     // GetStateEndExpansionScore should be an inexpensive method to retrieve the
     // (cached) expansion score computed within ExpandStateEnd. The score is
@@ -155,69 +138,41 @@ namespace ctc_beam_search {
     //
     // The score returned should be a log-probability.
     float GetStateEndExpansionScore(const KenLMBeamState& state) const {
-      return lm_weight * state.delta_score;
+      //std::cout << "GetStateEndExpansionScore" << std::endl;
+      return ngram_model_weight_ * state.ngram_score +
+             word_insertion_weight_ * state.num_words;
     }
 
     void SetLMWeight(float lm_weight) {
-      this->lm_weight = lm_weight;
+      this->ngram_model_weight_ = lm_weight;
     }
 
     void SetWordCountWeight(float word_count_weight) {
-      this->word_count_weight = word_count_weight;
+      this->word_insertion_weight_ = word_count_weight;
     }
 
     void SetValidWordCountWeight(float valid_word_count_weight) {
-      this->valid_word_count_weight = valid_word_count_weight;
+
     }
 
    private:
-    Labels *labels;
-    TrieNode *trieRoot;
-    lm::base::Model *model;
-    float lm_weight;
-    float word_count_weight;
-    float valid_word_count_weight;
+    Labels *labels_;
+    TrieNode *trie_root_;
+    lm::base::Model *model_;
+    float ngram_model_weight_;
+    float word_insertion_weight_;
+    float default_min_unigram_;
 
-    void UpdateWithLMScore(KenLMBeamState *state, float lm_score_delta) const {
-      float previous_score = state->score;
-      state->language_model_score += lm_score_delta;
-      state->score = state->language_model_score;
-      state->delta_score = state->language_model_score - previous_score;
+    float ScoreNewWord(const lm::ngram::State& from_ngram_state,
+                                    const std::wstring& new_word,
+                                    lm::ngram::State* to_ngram_state) const {
+
+        std::string encoded_word;
+        utf8::utf16to8(new_word.begin(), new_word.end(), std::back_inserter(encoded_word));
+        return model_->BaseScore(&from_ngram_state,
+                                 model_->BaseVocabulary().Index(encoded_word),
+                                 to_ngram_state);
     }
-
-    void ResetIncompleteWord(KenLMBeamState *state) const {
-      state->incomplete_word.clear();
-      state->incomplete_word_trie_node = trieRoot;
-    }
-
-    bool IsOOV(const std::wstring& word) const {
-      std::string encoded_word;
-      utf8::utf16to8(word.begin(), word.end(), std::back_inserter(encoded_word));
-      auto &vocabulary = model->BaseVocabulary();
-      return vocabulary.Index(encoded_word) == vocabulary.NotFound();
-    }
-
-    float ScoreIncompleteWord(const lm::ngram::State& model_state,
-                              const std::wstring& word,
-                              lm::ngram::State& out) const {
-      lm::FullScoreReturn full_score_return;
-      lm::WordIndex vocab;
-      std::string encoded_word;
-      utf8::utf16to8(word.begin(), word.end(), std::back_inserter(encoded_word));
-      vocab = model->BaseVocabulary().Index(encoded_word);
-      full_score_return = model->BaseFullScore(&model_state, vocab, &out);
-      return full_score_return.prob;
-    }
-
-    void CopyState(const KenLMBeamState& from, KenLMBeamState* to) const {
-      to->language_model_score = from.language_model_score;
-      to->score = from.score;
-      to->delta_score = from.delta_score;
-      to->incomplete_word = from.incomplete_word;
-      to->incomplete_word_trie_node = from.incomplete_word_trie_node;
-      to->model_state = from.model_state;
-    }
-
   };
 
 }  // namespace ctc

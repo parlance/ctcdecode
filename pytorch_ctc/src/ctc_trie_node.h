@@ -13,27 +13,36 @@ limitations under the License.
 #ifndef CTC_TRIENODE_H
 #define CTC_TRIENODE_H
 
-#include "lm/model.hh"
-
 #include <functional>
 #include <istream>
 #include <iostream>
 #include <limits>
 
+#ifdef INCLUDE_KENLM
+#include "lm/model.hh"
+#else
+namespace lm {
+  typedef int WordIndex;
+}
+#endif
+
 namespace pytorch {
 namespace ctc {
 
+#define WORD_MISS_VALUE 123
+
 class TrieNode {
 public:
-  TrieNode(int vocab_size) : vocab_size(vocab_size),
-                        prefixCount(0),
-                        min_score_word(0),
-                        min_unigram_score(std::numeric_limits<float>::max()) {
-      children = new TrieNode*[vocab_size]();
+  TrieNode(int vocab_size_) : vocab_size_(vocab_size_),
+                        prefix_count_(0),
+                        min_score_word_(0),
+                        unigram_score_(WORD_MISS_VALUE),
+                        min_unigram_score_(std::numeric_limits<float>::max()) {
+      children = new TrieNode*[vocab_size_]();
     }
 
   ~TrieNode() {
-    for (int i = 0; i < vocab_size; i++) {
+    for (int i = 0; i < vocab_size_; i++) {
       delete children[i];
     }
     delete children;
@@ -41,7 +50,7 @@ public:
 
   void WriteToStream(std::ostream& os) {
     WriteNode(os);
-    for (int i = 0; i < vocab_size; i++) {
+    for (int i = 0; i < vocab_size_; i++) {
       if (children[i] == nullptr) {
         os << -1 << std::endl;
       } else {
@@ -51,74 +60,89 @@ public:
     }
   }
 
-  static void ReadFromStream(std::istream& is, TrieNode* &obj, int vocab_size) {
-    int prefixCount;
-    is >> prefixCount;
+  static void ReadFromStream(std::istream& is, TrieNode* &obj, int vocab_size_) {
+    int prefix_count_;
+    is >> prefix_count_;
 
-    if (prefixCount == -1) {
+    if (prefix_count_ == -1) {
       // This is an undefined child
       obj = nullptr;
       return;
     }
 
-    obj = new TrieNode(vocab_size);
-    obj->ReadNode(is, prefixCount);
-    for (int i = 0; i < vocab_size; i++) {
+    obj = new TrieNode(vocab_size_);
+    obj->ReadNode(is, prefix_count_);
+    for (int i = 0; i < vocab_size_; i++) {
       // Recursive call
-      ReadFromStream(is, obj->children[i], vocab_size);
+      ReadFromStream(is, obj->children[i], vocab_size_);
     }
   }
 
-  void Insert(const wchar_t* word, std::function<int (wchar_t)> translator,
-              lm::WordIndex lm_word, float unigram_score) {
+  void Insert(const wchar_t* word,
+              std::function<int (wchar_t)> translator,
+              int lm_word,
+              float unigram_score) {
     wchar_t wordCharacter = *word;
-    prefixCount++;
-    if (unigram_score < min_unigram_score) {
-      min_unigram_score = unigram_score;
-      min_score_word = lm_word;
+    prefix_count_++;
+    if (unigram_score_ < min_unigram_score_) {
+      min_unigram_score_ = unigram_score;
+      min_score_word_ = lm_word;
     }
     if (wordCharacter != '\0') {
       int vocabIndex = translator(wordCharacter);
       TrieNode *child = children[vocabIndex];
       if (child == nullptr)
-        child = children[vocabIndex] = new TrieNode(vocab_size);
+        child = children[vocabIndex] = new TrieNode(vocab_size_);
       child->Insert(word + 1, translator, lm_word, unigram_score);
+    } else {
+      unigram_score_ = unigram_score;
     }
   }
 
   int GetFrequency() {
-    return prefixCount;
+    return prefix_count_;
   }
 
-  lm::WordIndex GetMinScoreWordIndex() {
-    return min_score_word;
+  int GetMinScoreWordIndex() {
+    return min_score_word_;
   }
 
   float GetMinUnigramScore() {
-    return min_unigram_score;
+    return min_unigram_score_;
   }
 
   TrieNode *GetChildAt(int vocabIndex) {
     return children[vocabIndex];
   }
 
+  bool GetIsWord() {
+    return unigram_score_ != WORD_MISS_VALUE;
+  }
+
+  float GetUnigramScore() {
+    return unigram_score_;
+  }
+
 private:
-  int vocab_size;
-  int prefixCount;
-  lm::WordIndex min_score_word;
-  float min_unigram_score;
+  int vocab_size_;
+  int prefix_count_;
+  int min_score_word_;
+  float unigram_score_;
+  float min_unigram_score_;
   TrieNode **children;
 
   void WriteNode(std::ostream& os) const {
-    os << prefixCount << std::endl;
-    os << min_score_word << std::endl;
-    os << min_unigram_score << std::endl;
+    os << prefix_count_ << std::endl;
+    os << min_score_word_ << std::endl;
+    os << min_unigram_score_ << std::endl;
+    os << unigram_score_ << std::endl;
   }
 
   void ReadNode(std::istream& is, int first_input) {
-    prefixCount = first_input;
-    is >> min_score_word;
-    is >> min_unigram_score;
+    prefix_count_ = first_input;
+    is >> min_score_word_;
+    is >> min_unigram_score_;
+    is >> unigram_score_;
   }
 
 };
