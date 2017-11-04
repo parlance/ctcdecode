@@ -400,7 +400,7 @@ template <typename CTCBeamState, typename CTCBeamComparer>
     paths->clear();
     beam_probs->clear();
     char_probs->clear();
-    alignments->clear();
+    //alignments->clear();
   }
   if (n > beam_width_) {
     return errors::InvalidArgument("requested more paths than the beam width.");

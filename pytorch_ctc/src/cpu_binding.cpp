@@ -1,3 +1,4 @@
+#ifdef TORCH_BINDING
 #include <iostream>
 #include "ctc_beam_entry.h"
 #include "ctc_beam_scorer.h"
@@ -326,3 +327,4 @@ namespace pytorch {
     }
   }
 }
+#endif
