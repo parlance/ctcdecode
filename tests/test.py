@@ -3,6 +3,8 @@ import unittest
 import torch
 import numpy as np
 import pytorch_ctc
+from torch.nn.functional import log_softmax
+from torch.autograd import Variable
 
 
 class CTCDecodeTests(unittest.TestCase):
@@ -121,6 +123,30 @@ class CTCDecodeTests(unittest.TestCase):
         self.assertEqual(alignments.numpy()[0,0,:decode_len[0][0]].tolist(), [0, 4])
         self.assertEqual(alignments.numpy()[1,0,:decode_len[1][0]].tolist(), [0, 2, 4])
         np.testing.assert_almost_equal(scores.numpy(), np.array([[-0.584855], [-0.389139]]), 5)
+
+    def test_real_ctc_decode(self):
+        data = np.genfromtxt("data/rnnOutput.csv", delimiter=';')[:,:-1]
+        # len max_time_steps array of batch_size x depth matrices
+        inputs = np.array([
+            data[t, :][np.newaxis, :] for t in range(data.shape[0])
+        ])
+        seq_lens = np.array([data.shape[0]], dtype=np.int32)
+
+        th_input = torch.from_numpy(inputs).type(torch.FloatTensor)
+        th_input = log_softmax(Variable(th_input), dim=2).data
+
+        th_seq_len = torch.IntTensor(seq_lens)
+
+        labels=' !"#&\'()*+,-./0123456789:;?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_'
+        scorer = pytorch_ctc.Scorer()
+        decoder = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=labels.index('_'), space_index=labels.index(' '), top_paths=1, beam_width=25)
+
+        decode_result, scores, decode_len, alignments, char_probs = decoder.decode(th_input, th_seq_len)
+
+        txt_result = ''.join([labels[x] for x in decode_result[0][0][0:decode_len[0][0]]])
+        self.assertTrue(False)
+        #print(decode_result.shape)
+        self.assertEqual("the fak friend of the fomcly hae tC", txt_result)
 
 if __name__ == '__main__':
     unittest.main()
