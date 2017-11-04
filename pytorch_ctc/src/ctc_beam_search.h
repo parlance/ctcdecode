@@ -156,13 +156,13 @@ Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Decode(
     CTCDecoder::ScoreOutput* beam_probs,
     std::vector<CTCDecoder::Output>* alignment,
     std::vector<CTCDecoder::CharProbability>* char_probs) {
-  int batch_size_ = input[0].rows();
+  const Eigen::Index batch_size_ = input[0].rows();
   // Storage for top paths.
   std::vector<std::vector<int>> beams;
   std::vector<float> beam_log_probabilities;
   std::vector<std::vector<int>> beam_alignments;
   std::vector<std::vector<float>> char_log_probabilities;
-  int top_n = output->size();
+  const int top_n = (int) output->size();
 
   // check data structure shapes
   if (std::any_of(output->begin(), output->end(),

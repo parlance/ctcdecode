@@ -114,7 +114,6 @@ struct BeamEntry {
 
   std::vector<float> CharProbSeq() const {
     std::vector<float> probs;
-    float prev_prob = kLogZero;
     const BeamEntry *c = this;
     while (c->parent != nullptr) {  // Checking c->parent to skip root leaf.
       probs.push_back(c->oldp.total);

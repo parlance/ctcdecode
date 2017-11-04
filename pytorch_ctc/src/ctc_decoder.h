@@ -71,7 +71,7 @@ class CTCGreedyDecoder : public CTCDecoder {
                 CTCDecoder::ScoreOutput* scores,
                 std::vector<CTCDecoder::Output> *alignment,
                 std::vector<CTCDecoder::CharProbability>* char_probs) override {
-    int batch_size_ = input[0].cols();
+    long batch_size_ = input[0].cols();
     if (output->empty() || (*output)[0].size() < batch_size_) {
       return errors::InvalidArgument(
           "output needs to be of size at least (1, batch_size).");
