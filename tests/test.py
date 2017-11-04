@@ -126,27 +126,41 @@ class CTCDecodeTests(unittest.TestCase):
 
     def test_real_ctc_decode(self):
         data = np.genfromtxt("data/rnnOutput.csv", delimiter=';')[:,:-1]
-        # len max_time_steps array of batch_size x depth matrices
         inputs = np.array([
             data[t, :][np.newaxis, :] for t in range(data.shape[0])
         ])
-        seq_lens = np.array([data.shape[0]], dtype=np.int32)
-
+        # Pad to max_time_steps = 8
+        #          + 2 * [-5*np.ones(
+        #              (1, 80), dtype=np.float32)], dtype=np.float32)
+        seq_lens = np.array([inputs.shape[0]], dtype=np.int32)
         th_input = torch.from_numpy(inputs).type(torch.FloatTensor)
         th_input = log_softmax(Variable(th_input), dim=2).data
-
         th_seq_len = torch.IntTensor(seq_lens)
 
         labels=' !"#&\'()*+,-./0123456789:;?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_'
+
+        # greedy using beam
         scorer = pytorch_ctc.Scorer()
-        decoder = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=labels.index('_'), space_index=labels.index(' '), top_paths=1, beam_width=25)
-
+        decoder = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=labels.index('_'), space_index=labels.index(' '), top_paths=1, beam_width=1)
         decode_result, scores, decode_len, alignments, char_probs = decoder.decode(th_input, th_seq_len)
-
         txt_result = ''.join([labels[x] for x in decode_result[0][0][0:decode_len[0][0]]])
+        print("greedy:    ", txt_result, decode_len[0][0])
+        #self.assertEqual("the fak friend of the fomly hae tC", txt_result)
+
+        # default beam decoding
+        decoder = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=labels.index('_'), space_index=labels.index(' '), top_paths=1, beam_width=25)
+        decode_result, scores, decode_len, alignments, char_probs = decoder.decode(th_input, th_seq_len)
+        txt_result = ''.join([labels[x] for x in decode_result[0][0][0:decode_len[0][0]]])
+        print("beam (25): ", txt_result, decode_len[0][0])
+        #self.assertEqual("the fak friend of the fomcly hae tC", txt_result)
+
+        # dictionary-based decoding
+        scorer = pytorch_ctc.DictScorer(labels, "data/ocr.trie", blank_index=labels.index('_'), space_index=labels.index(' '))
+        decoder = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=labels.index('_'), space_index=labels.index(' '), top_paths=1, beam_width=25)
+        decode_result, scores, decode_len, alignments, char_probs = decoder.decode(th_input, th_seq_len)
+        txt_result = ''.join([labels[x] for x in decode_result[0][0][0:decode_len[0][0]]])
+        print("dict:      ", txt_result, decode_len[0][0])
         self.assertTrue(False)
-        #print(decode_result.shape)
-        self.assertEqual("the fak friend of the fomcly hae tC", txt_result)
 
 if __name__ == '__main__':
     unittest.main()
