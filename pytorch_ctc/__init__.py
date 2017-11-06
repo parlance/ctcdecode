@@ -72,6 +72,7 @@ class Scorer(BaseScorer):
         super(Scorer, self).__init__()
         self._scorer = ctc._get_base_scorer()
 
+
 class DictScorer(BaseScorer):
     def __init__(self, labels, trie_path, blank_index=0, space_index=28):
         super(DictScorer, self).__init__()

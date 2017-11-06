@@ -40,7 +40,6 @@ namespace pytorch {
         std::wstring full_path;
         TrieNode *node;
         lm::ngram::State ngram_state;
-        // int depth;
       };
     }
 
@@ -88,7 +87,6 @@ namespace pytorch {
       void ExpandState(const KenLMBeamState& from_state, int from_label,
                        KenLMBeamState* to_state, int to_label) const {
         (void)from_label; // unused
-        // to_state->depth = from_state.depth + 1;
         wchar_t to_char = labels_->GetCharacter(to_label);
         to_state->full_path = from_state.full_path + to_char;
         // check to see if we're on a word boundary
@@ -97,9 +95,6 @@ namespace pytorch {
           to_state->score = StateIsCandidate(from_state, true) ?
                                 ScoreNewWord(from_state.ngram_state, from_state.word_prefix, &to_state->ngram_state)/kLogE : kLogZero;
           to_state->num_words = from_state.num_words + 1;
-          // if (is_candidate) {
-          //   std::wcout << "ExpandState to: " << to_state->full_path << "; Score: " << to_state->score << "; depth: " << to_state->depth << "; num_words: " << to_state->num_words << std::endl;
-          // }
           to_state->node = trie_root_;
           to_state->word_prefix = L"";
         } else {
@@ -119,17 +114,14 @@ namespace pytorch {
         utf8::utf16to8(state->full_path.begin(), state->full_path.end(), std::back_inserter(encoded_str));
         char *dup = strdup(encoded_str.c_str());
         char *token = strtok(dup, " ");
-        // printf("State end address is %p. Expanding...\n", (void *)state);
         lm::ngram::State a, b;
         model_->NullContextWrite(&a);
         while (token != NULL) {
-          // std::cout << "  " << token;
           token = strtok(NULL, " ");
           state->score = StateIsCandidate(*state, true) ? model_->BaseScore(&a, model_->BaseVocabulary().Index(token), &b)/kLogE : kLogZero;
           a = b;
         }
         free(dup);
-        // std::cout << " (" << state->score << ")" << std::endl;
       }
 
       // GetStateExpansionScore should be an inexpensive method to retrieve the
