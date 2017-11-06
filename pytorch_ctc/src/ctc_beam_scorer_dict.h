@@ -58,18 +58,9 @@ namespace ctc_beam_search {
 
     // State initialization.
     void InitializeState(DictBeamState* root) const {
-      //std::cout << "InitializeState" << std::endl;
       root->node = trie_root_;
       root->score = 0.0f;
     }
-
-    // void CopyState(const KenLMBeamState& from, KenLMBeamState* to) const {
-    //   to->score = from.score;
-    //   to->num_words = from.num_words;
-    //   to->word_prefix = from.word_prefix;
-    //   to->trie_node = from.trie_node;
-    //   to->ngram_state = from.ngram_state;
-    // }
 
     // ExpandState is called when expanding a beam to one of its children.
     // Called at most once per child beam. In the simplest case, no state
@@ -92,8 +83,6 @@ namespace ctc_beam_search {
     // allow a final scoring of the beam in its current state, before resorting
     // and retrieving the TopN requested candidates. Called at most once per beam.
     void ExpandStateEnd(DictBeamState* state) const {
-      //std::wcout << "ExpandStateEnd: " << state->word_prefix << std::endl;
-      //state->word_prefix.clear();
       state->score = StateIsCandidate(*state, true) ? 0.0 : kLogZero;
       state->node = trie_root_;
     }
@@ -116,8 +105,6 @@ namespace ctc_beam_search {
     //
     // The score returned should be a log-probability.
     float GetStateEndExpansionScore(const DictBeamState& state) const {
-      //std::cout << "GetStateEndExpansionScore" << std::endl;
-        //std::cout << "GetStateEndExpansionScore" << std::endl;
         return state.score;
     }
 
