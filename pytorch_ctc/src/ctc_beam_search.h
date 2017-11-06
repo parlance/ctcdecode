@@ -161,6 +161,7 @@ Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Decode(
   std::vector<std::vector<int>> beams;
   std::vector<float> beam_log_probabilities;
   std::vector<std::vector<float>> char_log_probabilities;
+  std::vector<std::vector<int>> beam_alignments;
   int top_n = output->size();
 
   // check data structure shapes
@@ -196,7 +197,6 @@ Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Decode(
     }
 
     // Extract the top-n paths from the top beams
-    std::vector<std::vector<int>> beam_alignments;
     Status status = TopPaths(top_n, &beams, &beam_log_probabilities,
                              &beam_alignments, &char_log_probabilities);
 
@@ -400,7 +400,7 @@ template <typename CTCBeamState, typename CTCBeamComparer>
     paths->clear();
     beam_probs->clear();
     char_probs->clear();
-    //alignments->clear();
+    alignments->clear();
   }
   if (n > beam_width_) {
     return errors::InvalidArgument("requested more paths than the beam width.");

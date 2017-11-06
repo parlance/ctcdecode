@@ -75,11 +75,11 @@ int main(int argc, const char * argv[]) {
             for (int64_t t=0; t<p_batch.size(); ++t) {
                 std::cout << labels[p_batch[t]];
             }
-//            auto& alignment_batch = alignments[p][b];
-//            std::cout << std::endl << "    Alignment:" << std::endl << "    ";
-//            for (int64_t t=0; t < alignment_batch.size(); ++t) {
-//                std::cout << "  " << alignment_batch[t];
-//            }
+            auto& alignment_batch = alignments[p][b];
+            std::cout << std::endl << "    Alignment:" << std::endl << "    ";
+            for (int64_t t=0; t < alignment_batch.size(); ++t) {
+                std::cout << alignment_batch[t] << ", ";
+            }
             std::cout << std::endl;
         }
     }
