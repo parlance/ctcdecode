@@ -102,8 +102,9 @@ class KenLMScorer(BaseScorer):
             ctc._set_kenlm_scorer_wc_weight(self._scorer, weight)
 
     def set_valid_word_weight(self, weight):
-        if weight is not None:
-            ctc._set_kenlm_scorer_vwc_weight(self._scorer, weight)
+        pass
+        # if weight is not None:
+        #     ctc._set_kenlm_scorer_vwc_weight(self._scorer, weight)
 
 
 class CTCBeamDecoder(BaseCTCBeamDecoder):

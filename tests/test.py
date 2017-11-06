@@ -145,14 +145,14 @@ class CTCDecodeTests(unittest.TestCase):
         decode_result, scores, decode_len, alignments, char_probs = decoder.decode(th_input, th_seq_len)
         txt_result = ''.join([labels[x] for x in decode_result[0][0][0:decode_len[0][0]]])
         print("greedy:    ", txt_result, decode_len[0][0])
-        #self.assertEqual("the fak friend of the fomly hae tC", txt_result)
+        self.assertEqual("the fak friend of the fomly hae tC", txt_result)
 
         # default beam decoding
         decoder = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=labels.index('_'), space_index=labels.index(' '), top_paths=1, beam_width=25)
         decode_result, scores, decode_len, alignments, char_probs = decoder.decode(th_input, th_seq_len)
         txt_result = ''.join([labels[x] for x in decode_result[0][0][0:decode_len[0][0]]])
         print("beam (25): ", txt_result, decode_len[0][0])
-        #self.assertEqual("the fak friend of the fomcly hae tC", txt_result)
+        self.assertEqual("the fak friend of the fomcly hae tC", txt_result)
 
         # dictionary-based decoding
         scorer = pytorch_ctc.DictScorer(labels, "data/ocr.trie", blank_index=labels.index('_'), space_index=labels.index(' '))
@@ -160,7 +160,17 @@ class CTCDecodeTests(unittest.TestCase):
         decode_result, scores, decode_len, alignments, char_probs = decoder.decode(th_input, th_seq_len)
         txt_result = ''.join([labels[x] for x in decode_result[0][0][0:decode_len[0][0]]])
         print("dict:      ", txt_result, decode_len[0][0])
-        self.assertTrue(False)
+        self.assertEqual("the fake friend of the family, fake the", txt_result)
+
+        #lm-based decoding
+        scorer = pytorch_ctc.KenLMScorer(labels, "data/bigram.arpa", "data/ocr.trie", blank_index=labels.index('_'), space_index=labels.index(' '))
+        scorer.set_lm_weight(2.0)
+        scorer.set_word_weight(0)
+        decoder = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=labels.index('_'), space_index=labels.index(' '), top_paths=1, beam_width=25)
+        decode_result, scores, decode_len, alignments, char_probs = decoder.decode(th_input, th_seq_len)
+        txt_result = ''.join([labels[x] for x in decode_result[0][0][0:decode_len[0][0]]])
+        print("bigram:    ", txt_result, decode_len[0][0])
+        self.assertEqual("the fake friend of the family, like the", txt_result)
 
 if __name__ == '__main__':
     unittest.main()

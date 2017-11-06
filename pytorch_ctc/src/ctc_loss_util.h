@@ -20,6 +20,7 @@ namespace pytorch {
 namespace ctc {
 
 const float kLogZero = -std::numeric_limits<float>::infinity();
+const float kLogE = 0.4342944819; // log10(e)
 
 // Add logarithmic probabilities using:
 // ln(a + b) = ln(a) + ln(1 + exp(ln(b) - ln(a)))

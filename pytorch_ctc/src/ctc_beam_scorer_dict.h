@@ -94,6 +94,7 @@ namespace ctc_beam_search {
     void ExpandStateEnd(DictBeamState* state) const {
       //std::wcout << "ExpandStateEnd: " << state->word_prefix << std::endl;
       //state->word_prefix.clear();
+      state->score = StateIsCandidate(*state, true) ? 0.0 : kLogZero;
       state->node = trie_root_;
     }
 
