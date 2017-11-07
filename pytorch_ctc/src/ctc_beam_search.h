@@ -92,7 +92,8 @@ class CTCBeamSearchDecoder : public CTCDecoder {
                 std::vector<CTCDecoder::Input>& input,
                 std::vector<CTCDecoder::Output>* output,
                 CTCDecoder::ScoreOutput* scores,
-                std::vector<CTCDecoder::Output>* alignment) override;
+                std::vector<CTCDecoder::Output>* alignment,
+                std::vector<CTCDecoder::CharProbability>* char_probs) override;
 
   // Calculate the next step of the beam search and update the internal state.
   template <typename Vector>
@@ -115,9 +116,11 @@ class CTCBeamSearchDecoder : public CTCDecoder {
   void Reset();
 
   // Extract the top n paths at current time step
-  Status TopPaths(int n, std::vector<std::vector<int>>* paths,
-                  std::vector<float>* log_probs,
-                  std::vector<std::vector<int>> *alignments) const;
+  Status TopPaths(int n,
+    std::vector<std::vector<int>>* paths,
+    std::vector<float>* beam_probs,
+    std::vector<std::vector<int>>* alignments,
+    std::vector<std::vector<float>>* char_probs) const;
 
  private:
   int beam_width_;
@@ -142,81 +145,87 @@ class CTCBeamSearchDecoder : public CTCDecoder {
   TF_DISALLOW_COPY_AND_ASSIGN(CTCBeamSearchDecoder);
 };
 
+// Decode takes the provided input and runs the beam decode using the
+// configured scorer. Returns output sequences of labels, beam log probability,
+// character alignment, and character probabilities.
 template <typename CTCBeamState, typename CTCBeamComparer>
 Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Decode(
     const CTCDecoder::SequenceLength& seq_len,
     std::vector<CTCDecoder::Input>& input,
     std::vector<CTCDecoder::Output>* output,
-    CTCDecoder::ScoreOutput* scores,
-    std::vector<CTCDecoder::Output>* alignment) {
+    CTCDecoder::ScoreOutput* beam_probs,
+    std::vector<CTCDecoder::Output>* alignment,
+    std::vector<CTCDecoder::CharProbability>* char_probs) {
   int batch_size_ = input[0].rows();
   // Storage for top paths.
   std::vector<std::vector<int>> beams;
   std::vector<float> beam_log_probabilities;
+  std::vector<std::vector<float>> char_log_probabilities;
+  std::vector<std::vector<int>> beam_alignments;
   int top_n = output->size();
+
+  // check data structure shapes
   if (std::any_of(output->begin(), output->end(),
                   [batch_size_](const CTCDecoder::Output& output) -> bool {
                     return output.size() < batch_size_;
-                  })) {
-    return errors::InvalidArgument(
-        "output needs to be of size at least (top_n, batch_size).");
+  })) {
+    return errors::InvalidArgument("output needs to be of size at least (top_n, batch_size).");
   }
-  if (scores->rows() < batch_size_ || scores->cols() < top_n) {
-    return errors::InvalidArgument(
-        "scores needs to be of size at least (batch_size, top_n).");
+  if (beam_probs->rows() < batch_size_ || beam_probs->cols() < top_n) {
+    return errors::InvalidArgument("scores needs to be of size at least (batch_size, top_n).");
   }
 
+  // iterate over each utterance in the batch individually
   for (int b = 0; b < batch_size_; ++b) {
     int seq_len_b = seq_len[b];
     Reset();
 
+    // step through each timestep for the given utterance -- pass in log probabilities of output classes
     for (int t = 0; t < seq_len_b; ++t) {
-      // Pass log-probabilities for this example + time.
       Step(input[t].row(b), t);
-    }  // for (int t...
+    }
 
     // O(n * log(n))
+    // complete the score calculation for each beam and re-add to the top-n data structure w/ new scores
     std::unique_ptr<std::vector<BeamEntry*>> branches(leaves_.Extract());
     leaves_.Reset();
     for (int i = 0; i < branches->size(); ++i) {
       BeamEntry* entry = (*branches)[i];
       beam_scorer_->ExpandStateEnd(&entry->state);
-      entry->newp.total +=
-          beam_scorer_->GetStateEndExpansionScore(entry->state);
+      entry->newp.total += beam_scorer_->GetStateEndExpansionScore(entry->state);
       leaves_.push(entry);
     }
 
-    std::vector<std::vector<int>> beam_alignments;
-    Status status = TopPaths(top_n, &beams, &beam_log_probabilities, &beam_alignments);
+    // Extract the top-n paths from the top beams
+    Status status = TopPaths(top_n, &beams, &beam_log_probabilities,
+                             &beam_alignments, &char_log_probabilities);
 
+    // ensure nothing went awry -- return errors if necessary
     if (!status.ok()) {
       return status;
     }
-
     if (top_n != beam_log_probabilities.size()) {
-      return errors::FailedPrecondition(
-          "incorrect number of paths generated");
+      return errors::FailedPrecondition("incorrect number of paths generated");
     }
     if (beams.size() != beam_log_probabilities.size()) {
-      return errors::FailedPrecondition(
-          "mismatch in beam result sizes"
-      );
+      return errors::FailedPrecondition("mismatch in beam result sizes");
     }
 
+    // write results to pointers provided by caller
     for (int i = 0; i < top_n; ++i) {
       // Copy output to the correct beam + batch
       (*output)[i][b].swap(beams[i]);
-      (*scores)(b, i) = -beam_log_probabilities[i];
+      (*beam_probs)(b, i) = -beam_log_probabilities[i];
       (*alignment)[i][b].swap(beam_alignments[i]);
+      (*char_probs)[i][b].swap(char_log_probabilities[i]);
     }
-  }  // for (int b...
+  }
   return Status::OK();
 }
 
 template <typename CTCBeamState, typename CTCBeamComparer>
 template <typename Vector>
-void CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Step(
-    const Vector& raw_input, int time_step) {
+void CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Step(const Vector& raw_input, int time_step) {
   Eigen::ArrayXf input = raw_input;
   // Remove the max for stability when performing log-prob calculations.
   input -= input.maxCoeff();
@@ -236,11 +245,11 @@ void CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Step(
         std::max(label_selection_input_min, -label_selection_margin_);
   }
 
-  // Extract the beams sorted in decreasing new probability
   if (num_classes_ != input.size()) {
     return;
   }
 
+  // Extract the beams sorted in decreasing new probability
   std::unique_ptr<std::vector<BeamEntry*>> branches(leaves_.Extract());
   leaves_.Reset();
 
@@ -249,6 +258,7 @@ void CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Step(
     b->oldp = b->newp;
   }
 
+  // iterate over every current beam to update the probability at that time
   for (BeamEntry* b : *branches) {
     if (b->parent != nullptr) {  // if not the root
       if (b->parent->Active()) {
@@ -274,6 +284,7 @@ void CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Step(
 
     // Push the entry back to the top paths list.
     // Note, this will always fill leaves back up in sorted order.
+    b->time_step = time_step;
     leaves_.push(b);
   }
 
@@ -360,17 +371,36 @@ void CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Reset() {
   beam_scorer_->InitializeState(&beam_root_->state);
 }
 
+// TopPaths returns `n` sorted top paths based on the internal decoding state.
+//
+// It accepts pointers to `paths` (character indexes per path), `beam_probs` (
+// the neg log likelihood of the beam), `alignments` (the time offset of each
+// character), and the `char_probs` (likelihood of the selected character at
+// that timestamp).
+//
+// It does this by evaluating the pushing all BeamEntry `leaves_` into a TopN
+// container and returning the top requested N, sorted according to the templated
+// CTCBeamComparer.
+//
+// The top-n returned leaves_ are then traversed back to their tree root to
+// generate the n-best character list.
 template <typename CTCBeamState, typename CTCBeamComparer>
-Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::TopPaths(
-    int n, std::vector<std::vector<int>>* paths, std::vector<float>* log_probs,
-    std::vector<std::vector<int>> *alignments) const {
-  if (paths == nullptr || log_probs == nullptr) {
+    Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::TopPaths(
+        int n,
+        std::vector<std::vector<int>>* paths,
+        std::vector<float>* beam_probs,
+        std::vector<std::vector<int>>* alignments,
+        std::vector<std::vector<float>>* char_probs)
+    const {
+  if (paths == nullptr || beam_probs == nullptr) {
     return errors::FailedPrecondition(
       "Internal paths are null"
     );
   } else {
     paths->clear();
-    log_probs->clear();
+    beam_probs->clear();
+    char_probs->clear();
+    alignments->clear();
   }
   if (n > beam_width_) {
     return errors::InvalidArgument("requested more paths than the beam width.");
@@ -392,7 +422,8 @@ Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::TopPaths(
   for (int i = 0; i < n; ++i) {
     BeamEntry* e((*branches)[i]);
     paths->push_back(e->LabelSeq());
-    log_probs->push_back(e->newp.total);
+    beam_probs->push_back(e->newp.total);
+    char_probs->push_back(e->CharProbSeq());
     alignments->push_back(e->TimeStepSeq());
   }
   return Status::OK();

@@ -23,7 +23,7 @@ if ex_klm in sys.argv:
 
 third_party_libs = ["eigen3", "utf8"]
 lib_sources = []
-compile_args = ['-std=c++11', '-fPIC', '-w', '-O3', '-DNDEBUG']
+compile_args = ['-std=c++11', '-fPIC', '-w', '-O3', '-DNDEBUG', '-DTORCH_BINDING']
 ext_libs = ['stdc++']
 
 if compile_test('zlib.h', 'z'):

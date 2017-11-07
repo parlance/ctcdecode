@@ -135,3 +135,5 @@ ENV/
 *.exe
 *.out
 *.app
+
+pytorch_ctc/ctcdecode.xcodeproj/

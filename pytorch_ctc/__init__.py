@@ -47,11 +47,12 @@ class BaseCTCBeamDecoder(object):
         scores = torch.FloatTensor(self._top_paths, batch_size)
         out_seq_len = torch.IntTensor(self._top_paths, batch_size)
         alignments = torch.IntTensor(self._top_paths, batch_size, max_seq_len)
+        char_probs = torch.FloatTensor(self._top_paths, batch_size, max_seq_len)
 
         result = ctc._ctc_beam_decode(self._decoder, self._decoder_type, probs, seq_len, output, scores, out_seq_len,
-                                      alignments)
+                                      alignments, char_probs)
 
-        return output, scores, out_seq_len, alignments
+        return output, scores, out_seq_len, alignments, char_probs
 
 
 class BaseScorer(object):
@@ -72,12 +73,19 @@ class Scorer(BaseScorer):
         self._scorer = ctc._get_base_scorer()
 
 
+class DictScorer(BaseScorer):
+    def __init__(self, labels, trie_path, blank_index=0, space_index=28):
+        super(DictScorer, self).__init__()
+        self._scorer_type = 1
+        self._scorer = ctc._get_dict_scorer(labels, len(labels), space_index, blank_index, trie_path.encode())
+
+
 class KenLMScorer(BaseScorer):
     def __init__(self, labels, lm_path, trie_path, blank_index=0, space_index=28):
         super(KenLMScorer, self).__init__()
         if ctc._kenlm_enabled() != 1:
             raise ImportError("pytorch-ctc not compiled with KenLM support.")
-        self._scorer_type = 1
+        self._scorer_type = 2
         self._scorer = ctc._get_kenlm_scorer(labels, len(labels), space_index, blank_index, lm_path.encode(),
                                              trie_path.encode())
 
@@ -94,10 +102,6 @@ class KenLMScorer(BaseScorer):
         if weight is not None:
             ctc._set_kenlm_scorer_wc_weight(self._scorer, weight)
 
-    def set_valid_word_weight(self, weight):
-        if weight is not None:
-            ctc._set_kenlm_scorer_vwc_weight(self._scorer, weight)
-
 
 class CTCBeamDecoder(BaseCTCBeamDecoder):
     def __init__(self, scorer, labels, top_paths=1, beam_width=10, blank_index=0, space_index=28):
@@ -112,11 +116,15 @@ class CTCBeamDecoder(BaseCTCBeamDecoder):
         ctc._set_label_selection_parameters(self._decoder, label_size, label_margin)
 
 
-def generate_lm_dict(dictionary_path, kenlm_path, output_path, labels, blank_index=0, space_index=28):
-    if ctc._kenlm_enabled() != 1:
+def generate_lm_dict(dictionary_path, output_path, labels, kenlm_path=None, blank_index=0, space_index=28):
+    if kenlm_path is not None and ctc._kenlm_enabled() != 1:
         raise ImportError("pytorch-ctc not compiled with KenLM support.")
-    result = ctc._generate_lm_dict(labels, len(labels), blank_index, space_index, kenlm_path.encode(),
-                                   dictionary_path.encode(), output_path.encode())
-
+    result = None
+    if kenlm_path is not None:
+        result = ctc._generate_lm_dict(labels, len(labels), blank_index, space_index, kenlm_path.encode(),
+                                       dictionary_path.encode(), output_path.encode())
+    else:
+        result = ctc._generate_dict(labels, len(labels), blank_index, space_index,
+                                    dictionary_path.encode(), output_path.encode())
     if result != 0:
         raise ValueError("Error encountered generating dictionary")
