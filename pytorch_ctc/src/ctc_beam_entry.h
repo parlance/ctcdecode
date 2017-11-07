@@ -116,7 +116,7 @@ struct BeamEntry {
     std::vector<float> probs;
     const BeamEntry *c = this;
     while (c->parent != nullptr) {  // Checking c->parent to skip root leaf.
-      probs.push_back(c->oldp.total);
+      probs.push_back(c->newp.total);
       c = c->parent;
     }
     std::reverse(probs.begin(), probs.end());
