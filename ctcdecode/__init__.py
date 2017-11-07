@@ -89,7 +89,7 @@ class KenLMScorer(BaseScorer):
     def __init__(self, labels, lm_path, trie_path, blank_index=0, space_index=28):
         super(KenLMScorer, self).__init__()
         if ctc_decode.kenlm_enabled() != 1:
-            raise ImportError("pytorch-ctc not compiled with KenLM support.")
+            raise ImportError("ctcdecode not compiled with KenLM support.")
         self._scorer_type = 2
         self._scorer = ctc_decode.get_kenlm_scorer(labels, len(labels), space_index, blank_index, lm_path.encode(),
                                              trie_path.encode())
@@ -126,8 +126,8 @@ class CTCBeamDecoder(BaseCTCBeamDecoder):
 
 
 def generate_lm_dict(dictionary_path, output_path, labels, kenlm_path=None, blank_index=0, space_index=28):
-    if kenlm_path is not None and ctc._kenlm_enabled() != 1:
-        raise ImportError("pytorch-ctc not compiled with KenLM support.")
+    if kenlm_path is not None and ctc_decode.kenlm_enabled() != 1:
+        raise ImportError("ctcdecode not compiled with KenLM support.")
     result = None
     if kenlm_path is not None:
         result = ctc_decode.generate_lm_dict(labels, len(labels), blank_index, space_index, kenlm_path.encode(),
