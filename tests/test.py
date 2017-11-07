@@ -50,8 +50,8 @@ class CTCDecodeTests(unittest.TestCase):
                 [0.155251, 0.164444, 0.173517, 0.176138, 0.169979, 0.160671]
             ],
             dtype=np.float32)
-        # Add arbitrary offset - this is fine
-        input_log_prob_matrix_0 = np.log(input_prob_matrix_0) + 2.0
+        # Take the log
+        input_log_prob_matrix_0 = np.log(input_prob_matrix_0)
 
         # len max_time_steps array of batch_size x depth matrices
         inputs = np.array([
@@ -76,7 +76,36 @@ class CTCDecodeTests(unittest.TestCase):
         self.assertEqual(decode_len[1][0], 3)
         self.assertEqual(decode_result.numpy()[0, 0, :decode_len[0][0]].tolist(), [1, 0])
         self.assertEqual(decode_result.numpy()[1, 0, :decode_len[1][0]].tolist(), [0, 1, 0])
-        np.testing.assert_almost_equal(scores.numpy(), np.array([[-0.584855], [-0.389139]]), 5)
+        self.assertEqual(alignments.numpy()[0, 0, :decode_len[0][0]].tolist(), [0, 4])
+        self.assertEqual(alignments.numpy()[1, 0, :decode_len[1][0]].tolist(), [0, 2, 4])
+        np.testing.assert_almost_equal(scores.numpy(), np.array([[-3.58212], [-3.77783]]), 5)
+
+    def test_ctc_output_probability(self):
+        seq_len_0 = 2
+        classes = 3
+        input_prob_matrix_0 = np.asarray(
+            [
+                [0.4, 0.00000001, 0.6],
+                [0.4, 0.00000001, 0.6]
+            ],
+            dtype=np.float32
+        )
+        input_log_prob_matrix_0 = np.log(input_prob_matrix_0)
+        inputs = np.array([input_log_prob_matrix_0[t, :][np.newaxis, :] for t in range(seq_len_0)])
+        seq_lens = np.array([seq_len_0], dtype=np.int32)
+
+        th_input = torch.from_numpy(inputs)
+        th_seq_len = torch.IntTensor(seq_lens)
+
+        labels = "AB_"
+        scorer = ctcdecode.Scorer()
+        decoder = ctcdecode.CTCBeamDecoder(scorer, labels, blank_index=2, space_index=-1, top_paths=1, beam_width=3)
+
+        decode_result, scores, decode_len, alignments, char_probs = decoder.decode(th_input, th_seq_len)
+        self.assertEqual(decode_len[0][0], 1)
+        self.assertEqual(decode_result.numpy()[0, 0, :decode_len[0][0]].tolist(), [0])
+        self.assertEqual(alignments.numpy()[0, 0, :decode_len[0][0]].tolist(), [1])
+        np.testing.assert_almost_equal(scores.numpy(), np.log(np.array([[0.64]])), 5)
 
     def test_ctc_decoder_beam_search_different_blank_idx(self):
         depth = 6
@@ -92,8 +121,8 @@ class CTCDecodeTests(unittest.TestCase):
                 [0.160671, 0.155251, 0.164444, 0.173517, 0.176138, 0.169979]
             ],
             dtype=np.float32)
-        # Add arbitrary offset - this is fine
-        input_log_prob_matrix_0 = np.log(input_prob_matrix_0) + 2.0
+        # Take the log
+        input_log_prob_matrix_0 = np.log(input_prob_matrix_0)
 
         # len max_time_steps array of batch_size x depth matrices
         inputs = np.array([
@@ -119,7 +148,7 @@ class CTCDecodeTests(unittest.TestCase):
         self.assertEqual(decode_result.numpy()[1, 0, :decode_len[1][0]].tolist(), [1, 2, 1])
         self.assertEqual(alignments.numpy()[0, 0, :decode_len[0][0]].tolist(), [0, 4])
         self.assertEqual(alignments.numpy()[1, 0, :decode_len[1][0]].tolist(), [0, 2, 4])
-        np.testing.assert_almost_equal(scores.numpy(), np.array([[-0.584855], [-0.389139]]), 5)
+        np.testing.assert_almost_equal(scores.numpy(), np.array([[-3.58212], [-3.77783]]), 5)
 
     def test_real_ctc_decode(self):
         data = np.genfromtxt("data/rnnOutput.csv", delimiter=';')[:, :-1]

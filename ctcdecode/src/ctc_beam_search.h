@@ -215,7 +215,7 @@ Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Decode(
     for (int i = 0; i < top_n; ++i) {
       // Copy output to the correct beam + batch
       (*output)[i][b].swap(beams[i]);
-      (*beam_probs)(b, i) = -beam_log_probabilities[i];
+      (*beam_probs)(b, i) = beam_log_probabilities[i];
       (*alignment)[i][b].swap(beam_alignments[i]);
       (*char_probs)[i][b].swap(char_log_probabilities[i]);
     }
@@ -227,8 +227,6 @@ template <typename CTCBeamState, typename CTCBeamComparer>
 template <typename Vector>
 void CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Step(const Vector& raw_input, int time_step) {
   Eigen::ArrayXf input = raw_input;
-  // Remove the max for stability when performing log-prob calculations.
-  input -= input.maxCoeff();
 
   // Minimum allowed input value for label selection:
   float label_selection_input_min = -std::numeric_limits<float>::infinity();
