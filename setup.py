@@ -5,8 +5,10 @@ import sys
 import platform
 import glob
 
-from distutils.core import setup, Extension
+from setuptools import setup, find_packages
 from torch.utils.ffi import create_extension
+
+this_file = os.path.dirname(__file__)
 
 #Does gcc compile with this header and library?
 def compile_test(header, library):
@@ -44,36 +46,37 @@ if include_kenlm:
     lib_sources = glob.glob('third_party/kenlm/util/*.cc') + glob.glob('third_party/kenlm/lm/*.cc') + glob.glob('third_party/kenlm/util/double-conversion/*.cc')
     lib_sources = [fn for fn in lib_sources if not (fn.endswith('main.cc') or fn.endswith('test.cc'))]
 
-third_party_includes=["third_party/" + lib for lib in third_party_libs]
-ctc_sources = ['pytorch_ctc/src/cpu_binding.cpp', 'pytorch_ctc/src/util/status.cpp']
-ctc_headers = ['pytorch_ctc/src/cpu_binding.h',]
+third_party_includes=[os.path.realpath(os.path.join("third_party", lib)) for lib in third_party_libs]
+ctc_sources = ['ctcdecode/src/cpu_binding.cpp', 'ctcdecode/src/util/status.cpp']
+ctc_headers = ['ctcdecode/src/cpu_binding.h',]
 
 ffi = create_extension(
-    name='ctc_decode',
+    name='ctcdecode._ext.ctc_decode',
     package=True,
     language='c++',
     headers=ctc_headers,
     sources=ctc_sources + lib_sources,
     include_dirs=third_party_includes,
-    with_cuda=False,
     libraries=ext_libs,
-    extra_compile_args=compile_args#, '-DINCLUDE_KENLM']
+    extra_compile_args=compile_args,
+    relative_to=__file__,
+    with_cuda=False
 )
 ffi = ffi.distutils_extension()
-ffi.name = 'pytorch_ctc._ctc_decode'
 
 setup(
-    name="pytorch_ctc",
-    version="0.1",
+    name="ctcdecode",
+    version="0.2",
     description="CTC Decoder for PyTorch based on TensorFlow's implementation",
-    url="https://github.com/ryanleary/pytorch-ctc-decode",
+    url="https://github.com/parlance/ctcdecode",
     author="Ryan Leary",
     author_email="ryanleary@gmail.com",
     # Require cffi.
     install_requires=["cffi>=1.0.0"],
     setup_requires=["cffi>=1.0.0"],
     # Exclude the build files.
-    packages=["pytorch_ctc"],
+    packages=find_packages(exclude=["build"]),
     # Extensions to compile.
     ext_modules=[ffi]
+
 )
