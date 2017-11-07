@@ -28,7 +28,8 @@ namespace ctc_beam_search {
     }
 
     DictBeamScorer(Labels *labels, const char *trie_path) :
-        labels_(labels)
+        labels_(labels),
+        default_min_unigram_(kLogZero)
     {
       std::ifstream in;
       in.open(trie_path, std::ios::in);
@@ -50,11 +51,11 @@ namespace ctc_beam_search {
       // check to see if we're on a word boundary
       if (labels_->IsSpace(to_label) && from_state.node != trie_root_) {
         // check if from_state is valid
-        to_state->score = StateIsCandidate(from_state, true) ? 0.0 : kLogZero;
+        to_state->score = StateIsCandidate(from_state, true) ? 0.0 : default_min_unigram_;
         to_state->node = trie_root_;
       } else {
         to_state->node = (from_state.node == nullptr) ? nullptr : from_state.node->GetChildAt(to_label);
-        to_state->score = StateIsCandidate(*to_state, false) ? 0.0 : kLogZero;
+        to_state->score = StateIsCandidate(*to_state, false) ? 0.0 : default_min_unigram_;
       }
     }
 
@@ -63,7 +64,7 @@ namespace ctc_beam_search {
     // allow a final scoring of the beam in its current state, before resorting
     // and retrieving the TopN requested candidates. Called at most once per beam.
     void ExpandStateEnd(DictBeamState* state) const {
-      state->score = StateIsCandidate(*state, true) ? 0.0 : kLogZero;
+      state->score = StateIsCandidate(*state, true) ? 0.0 : default_min_unigram_;
       state->node = trie_root_;
     }
 
@@ -88,9 +89,14 @@ namespace ctc_beam_search {
         return state.score;
     }
 
+    void SetMinimumUnigramProbability(float min_unigram) {
+      this->default_min_unigram_ = min_unigram;
+    }
+
    private:
     Labels *labels_;
     TrieNode *trie_root_;
+    float default_min_unigram_;
 
     bool StateIsCandidate(const DictBeamState& state, bool word) const;
   };

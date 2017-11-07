@@ -73,13 +73,13 @@ namespace pytorch {
         if (labels_->IsSpace(to_label) && from_state.node != trie_root_) {
           // check if from_state is valid
           to_state->score = StateIsCandidate(from_state, true) ?
-                                ScoreNewWord(from_state.ngram_state, from_state.word_prefix, &to_state->ngram_state)/kLogE : kLogZero;
+                                ScoreNewWord(from_state.ngram_state, from_state.word_prefix, &to_state->ngram_state)/kLogE : default_min_unigram_;
           to_state->num_words = from_state.num_words + 1;
           to_state->node = trie_root_;
           to_state->word_prefix = L"";
         } else {
           to_state->node = (from_state.node == nullptr) ? nullptr : from_state.node->GetChildAt(to_label);
-          to_state->score = StateIsCandidate(*to_state, false) ? 0.0 : kLogZero;
+          to_state->score = StateIsCandidate(*to_state, false) ? 0.0 : default_min_unigram_;
           to_state->word_prefix = from_state.word_prefix + to_char;
           to_state->ngram_state = from_state.ngram_state;
           to_state->num_words = from_state.num_words;
@@ -98,7 +98,7 @@ namespace pytorch {
         model_->NullContextWrite(&a);
         while (token != NULL) {
           token = strtok(NULL, " ");
-          state->score = StateIsCandidate(*state, true) ? model_->BaseScore(&a, model_->BaseVocabulary().Index(token), &b)/kLogE : kLogZero;
+          state->score = StateIsCandidate(*state, true) ? model_->BaseScore(&a, model_->BaseVocabulary().Index(token), &b)/kLogE : default_min_unigram_;
           a = b;
         }
         free(dup);
@@ -133,6 +133,10 @@ namespace pytorch {
 
       void SetWordCountWeight(float word_count_weight) {
         this->word_insertion_weight_ = word_count_weight;
+      }
+
+      void SetMinimumUnigramProbability(float min_unigram) {
+        this->default_min_unigram_ = min_unigram;
       }
 
     private:

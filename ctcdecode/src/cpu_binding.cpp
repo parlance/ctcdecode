@@ -151,6 +151,18 @@ namespace pytorch {
       #endif
     }
 
+    void set_kenlm_min_unigram_weight(void *scorer, float weight) {
+      #ifdef INCLUDE_KENLM
+      ctc::KenLMBeamScorer *beam_scorer = static_cast<ctc::KenLMBeamScorer *>(scorer);
+      beam_scorer->SetMinimumUnigramProbability(weight);
+      #endif
+    }
+
+    void set_dict_min_unigram_weight(void *scorer, float weight) {
+      ctc::DictBeamScorer *beam_scorer = static_cast<ctc::DictBeamScorer *>(scorer);
+      beam_scorer->SetMinimumUnigramProbability(weight);
+    }
+
     void set_label_selection_parameters(void *decoder, int label_selection_size, float label_selection_margin) {
       ctc::CTCBeamSearchDecoder<> *beam_decoder = static_cast<ctc::CTCBeamSearchDecoder<> *>(decoder);
       beam_decoder->SetLabelSelectionParameters(label_selection_size, label_selection_margin);

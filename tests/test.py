@@ -151,7 +151,17 @@ class CTCDecodeTests(unittest.TestCase):
         txt_result = ''.join([labels[x] for x in decode_result[0][0][0:decode_len[0][0]]])
         self.assertEqual("the fak friend of the fomcly hae tC", txt_result)
 
-        # dictionary-based decoding
+        # dictionary-based decoding where non-words and words are equiprobable. Equivalent to standard beam decoding
+        scorer = ctcdecode.DictScorer(labels, "data/ocr.trie", blank_index=labels.index('_'),
+                                        space_index=labels.index(' '))
+        scorer.set_min_unigram_weight(0.0)
+        decoder = ctcdecode.CTCBeamDecoder(scorer, labels, blank_index=labels.index('_'),
+                                             space_index=labels.index(' '), top_paths=1, beam_width=25)
+        decode_result, scores, decode_len, alignments, char_probs = decoder.decode(th_input, th_seq_len)
+        txt_result = ''.join([labels[x] for x in decode_result[0][0][0:decode_len[0][0]]])
+        self.assertEqual("the fak friend of the fomcly hae tC", txt_result)
+
+        # dictionary-based decoding - only dictionary words can be emitted
         scorer = ctcdecode.DictScorer(labels, "data/ocr.trie", blank_index=labels.index('_'),
                                         space_index=labels.index(' '))
         decoder = ctcdecode.CTCBeamDecoder(scorer, labels, blank_index=labels.index('_'),
