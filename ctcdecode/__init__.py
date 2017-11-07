@@ -80,6 +80,10 @@ class DictScorer(BaseScorer):
         self._scorer_type = 1
         self._scorer = ctc_decode.get_dict_scorer(labels, len(labels), space_index, blank_index, trie_path.encode())
 
+    def set_min_unigram_weight(self, weight):
+        if weight is not None:
+            ctc_decode.set_dict_min_unigram_weight(self._scorer, weight)
+
 
 class KenLMScorer(BaseScorer):
     def __init__(self, labels, lm_path, trie_path, blank_index=0, space_index=28):
@@ -102,6 +106,10 @@ class KenLMScorer(BaseScorer):
     def set_word_weight(self, weight):
         if weight is not None:
             ctc_decode.set_kenlm_scorer_wc_weight(self._scorer, weight)
+
+    def set_min_unigram_weight(self, weight):
+        if weight is not None:
+            ctc_decode.set_kenlm_min_unigram_weight(self._scorer, weight)
 
 
 class CTCBeamDecoder(BaseCTCBeamDecoder):
