@@ -2,7 +2,7 @@ import unittest
 
 import torch
 import numpy as np
-import pytorch_ctc
+import ctcdecode
 from torch.nn.functional import log_softmax
 from torch.autograd import Variable
 
@@ -14,8 +14,8 @@ class CTCDecodeTests(unittest.TestCase):
         seq_len = torch.IntTensor(np.array([5], dtype=np.int32))
 
         labels = "A_"
-        scorer = pytorch_ctc.Scorer()
-        decoder_nomerge = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=1, space_index=-1, top_paths=1,
+        scorer = ctcdecode.Scorer()
+        decoder_nomerge = ctcdecode.CTCBeamDecoder(scorer, labels, blank_index=1, space_index=-1, top_paths=1,
                                                      beam_width=1)
 
         result_nomerge, _, result_nomerge_len, nomerge_alignments, _ = decoder_nomerge.decode(aa, seq_len)
@@ -28,8 +28,8 @@ class CTCDecodeTests(unittest.TestCase):
         seq_len = torch.IntTensor(np.array([5], dtype=np.int32))
 
         labels = "_A"
-        scorer = pytorch_ctc.Scorer()
-        decoder_nomerge = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=0, space_index=-1, top_paths=1,
+        scorer = ctcdecode.Scorer()
+        decoder_nomerge = ctcdecode.CTCBeamDecoder(scorer, labels, blank_index=0, space_index=-1, top_paths=1,
                                                      beam_width=1)
 
         result_nomerge, _, result_nomerge_len, nomerge_alignments, _ = decoder_nomerge.decode(aa, seq_len)
@@ -67,8 +67,8 @@ class CTCDecodeTests(unittest.TestCase):
         th_seq_len = torch.IntTensor(seq_lens)
 
         labels = "ABCDE_"
-        scorer = pytorch_ctc.Scorer()
-        decoder = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=5, space_index=-1, top_paths=2, beam_width=2)
+        scorer = ctcdecode.Scorer()
+        decoder = ctcdecode.CTCBeamDecoder(scorer, labels, blank_index=5, space_index=-1, top_paths=2, beam_width=2)
 
         decode_result, scores, decode_len, alignments, _ = decoder.decode(th_input, th_seq_len)
 
@@ -109,8 +109,8 @@ class CTCDecodeTests(unittest.TestCase):
         th_seq_len = torch.IntTensor(seq_lens)
 
         labels = "_ABCDE"
-        scorer = pytorch_ctc.Scorer()
-        decoder = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=0, space_index=-1, top_paths=2, beam_width=2)
+        scorer = ctcdecode.Scorer()
+        decoder = ctcdecode.CTCBeamDecoder(scorer, labels, blank_index=0, space_index=-1, top_paths=2, beam_width=2)
 
         decode_result, scores, decode_len, alignments, char_probs = decoder.decode(th_input, th_seq_len)
         self.assertEqual(decode_len[0][0], 2)
@@ -137,35 +137,35 @@ class CTCDecodeTests(unittest.TestCase):
         labels = ' !"#&\'()*+,-./0123456789:;?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_'
 
         # greedy using beam
-        scorer = pytorch_ctc.Scorer()
-        decoder = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=labels.index('_'),
+        scorer = ctcdecode.Scorer()
+        decoder = ctcdecode.CTCBeamDecoder(scorer, labels, blank_index=labels.index('_'),
                                              space_index=labels.index(' '), top_paths=1, beam_width=1)
         decode_result, scores, decode_len, alignments, char_probs = decoder.decode(th_input, th_seq_len)
         txt_result = ''.join([labels[x] for x in decode_result[0][0][0:decode_len[0][0]]])
         self.assertEqual("the fak friend of the fomly hae tC", txt_result)
 
         # default beam decoding
-        decoder = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=labels.index('_'),
+        decoder = ctcdecode.CTCBeamDecoder(scorer, labels, blank_index=labels.index('_'),
                                              space_index=labels.index(' '), top_paths=1, beam_width=25)
         decode_result, scores, decode_len, alignments, char_probs = decoder.decode(th_input, th_seq_len)
         txt_result = ''.join([labels[x] for x in decode_result[0][0][0:decode_len[0][0]]])
         self.assertEqual("the fak friend of the fomcly hae tC", txt_result)
 
         # dictionary-based decoding
-        scorer = pytorch_ctc.DictScorer(labels, "data/ocr.trie", blank_index=labels.index('_'),
+        scorer = ctcdecode.DictScorer(labels, "data/ocr.trie", blank_index=labels.index('_'),
                                         space_index=labels.index(' '))
-        decoder = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=labels.index('_'),
+        decoder = ctcdecode.CTCBeamDecoder(scorer, labels, blank_index=labels.index('_'),
                                              space_index=labels.index(' '), top_paths=1, beam_width=25)
         decode_result, scores, decode_len, alignments, char_probs = decoder.decode(th_input, th_seq_len)
         txt_result = ''.join([labels[x] for x in decode_result[0][0][0:decode_len[0][0]]])
         self.assertEqual("the fake friend of the family, fake the", txt_result)
 
         # lm-based decoding
-        scorer = pytorch_ctc.KenLMScorer(labels, "data/bigram.arpa", "data/ocr.trie", blank_index=labels.index('_'),
+        scorer = ctcdecode.KenLMScorer(labels, "data/bigram.arpa", "data/ocr.trie", blank_index=labels.index('_'),
                                          space_index=labels.index(' '))
         scorer.set_lm_weight(2.0)
         scorer.set_word_weight(0)
-        decoder = pytorch_ctc.CTCBeamDecoder(scorer, labels, blank_index=labels.index('_'),
+        decoder = ctcdecode.CTCBeamDecoder(scorer, labels, blank_index=labels.index('_'),
                                              space_index=labels.index(' '), top_paths=1, beam_width=25)
         decode_result, scores, decode_len, alignments, char_probs = decoder.decode(th_input, th_seq_len)
         txt_result = ''.join([labels[x] for x in decode_result[0][0][0:decode_len[0][0]]])

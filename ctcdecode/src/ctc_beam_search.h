@@ -116,7 +116,7 @@ class CTCBeamSearchDecoder : public CTCDecoder {
   void Reset();
 
   // Extract the top n paths at current time step
-  Status TopPaths(int n,
+  Status TopPaths(unsigned long n,
     std::vector<std::vector<int>>* paths,
     std::vector<float>* beam_probs,
     std::vector<std::vector<int>>* alignments,
@@ -156,13 +156,13 @@ Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Decode(
     CTCDecoder::ScoreOutput* beam_probs,
     std::vector<CTCDecoder::Output>* alignment,
     std::vector<CTCDecoder::CharProbability>* char_probs) {
-  int batch_size_ = input[0].rows();
+  int batch_size_ = (int)input[0].rows();
   // Storage for top paths.
   std::vector<std::vector<int>> beams;
   std::vector<float> beam_log_probabilities;
   std::vector<std::vector<float>> char_log_probabilities;
   std::vector<std::vector<int>> beam_alignments;
-  int top_n = output->size();
+  unsigned long top_n = output->size();
 
   // check data structure shapes
   if (std::any_of(output->begin(), output->end(),
@@ -273,6 +273,7 @@ void CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Step(const Vector& raw
         b->newp.label =
             LogSumExp(b->newp.label,
                       beam_scorer_->GetStateExpansionScore(b->state, previous));
+        b->time_step = time_step;
       }
       // Plabel(l=abc @ t=6) *= P(c @ 6)
       b->newp.label += input(b->label);
@@ -284,7 +285,6 @@ void CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Step(const Vector& raw
 
     // Push the entry back to the top paths list.
     // Note, this will always fill leaves back up in sorted order.
-    b->time_step = time_step;
     leaves_.push(b);
   }
 
@@ -386,7 +386,7 @@ void CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::Reset() {
 // generate the n-best character list.
 template <typename CTCBeamState, typename CTCBeamComparer>
     Status CTCBeamSearchDecoder<CTCBeamState, CTCBeamComparer>::TopPaths(
-        int n,
+        unsigned long n,
         std::vector<std::vector<int>>* paths,
         std::vector<float>* beam_probs,
         std::vector<std::vector<int>>* alignments,

@@ -1,20 +1,21 @@
 import torch
-import pytorch_ctc as ctc
+import ctcdecode as ctc
 from torch.utils.ffi import _wrap_function
-from ._ctc_decode import lib as _lib, ffi as _ffi
-
-__all__ = []
-
-
-def _import_symbols(locals):
-    for symbol in dir(_lib):
-        fn = getattr(_lib, symbol)
-        new_symbol = "_" + symbol
-        locals[new_symbol] = _wrap_function(fn, _ffi)
-        __all__.append(new_symbol)
-
-
-_import_symbols(locals())
+from ._ext import ctc_decode
+# from ._ext._ctc_decode import lib as _lib, ffi as _ffi
+#
+# __all__ = []
+#
+#
+# def _import_symbols(locals):
+#     for symbol in dir(_lib):
+#         fn = getattr(_lib, symbol)
+#         new_symbol = "_" + symbol
+#         locals[new_symbol] = _wrap_function(fn, _ffi)
+#         __all__.append(new_symbol)
+#
+#
+# _import_symbols(locals())
 
 
 class BaseCTCBeamDecoder(object):
@@ -49,7 +50,7 @@ class BaseCTCBeamDecoder(object):
         alignments = torch.IntTensor(self._top_paths, batch_size, max_seq_len)
         char_probs = torch.FloatTensor(self._top_paths, batch_size, max_seq_len)
 
-        result = ctc._ctc_beam_decode(self._decoder, self._decoder_type, probs, seq_len, output, scores, out_seq_len,
+        result = ctc_decode.ctc_beam_decode(self._decoder, self._decoder_type, probs, seq_len, output, scores, out_seq_len,
                                       alignments, char_probs)
 
         return output, scores, out_seq_len, alignments, char_probs
@@ -70,37 +71,37 @@ class BaseScorer(object):
 class Scorer(BaseScorer):
     def __init__(self):
         super(Scorer, self).__init__()
-        self._scorer = ctc._get_base_scorer()
+        self._scorer = ctc_decode.get_base_scorer()
 
 
 class DictScorer(BaseScorer):
     def __init__(self, labels, trie_path, blank_index=0, space_index=28):
         super(DictScorer, self).__init__()
         self._scorer_type = 1
-        self._scorer = ctc._get_dict_scorer(labels, len(labels), space_index, blank_index, trie_path.encode())
+        self._scorer = ctc_decode.get_dict_scorer(labels, len(labels), space_index, blank_index, trie_path.encode())
 
 
 class KenLMScorer(BaseScorer):
     def __init__(self, labels, lm_path, trie_path, blank_index=0, space_index=28):
         super(KenLMScorer, self).__init__()
-        if ctc._kenlm_enabled() != 1:
+        if ctc_decode.kenlm_enabled() != 1:
             raise ImportError("pytorch-ctc not compiled with KenLM support.")
         self._scorer_type = 2
-        self._scorer = ctc._get_kenlm_scorer(labels, len(labels), space_index, blank_index, lm_path.encode(),
+        self._scorer = ctc_decode.get_kenlm_scorer(labels, len(labels), space_index, blank_index, lm_path.encode(),
                                              trie_path.encode())
 
     # This is a way to make sure the destructor is called for the C++ object
     # Frees all the member data items that have allocated memory
     def __del__(self):
-        ctc._free_kenlm_scorer(self._scorer)
+        ctc_decode.free_kenlm_scorer(self._scorer)
 
     def set_lm_weight(self, weight):
         if weight is not None:
-            ctc._set_kenlm_scorer_lm_weight(self._scorer, weight)
+            ctc_decode.set_kenlm_scorer_lm_weight(self._scorer, weight)
 
     def set_word_weight(self, weight):
         if weight is not None:
-            ctc._set_kenlm_scorer_wc_weight(self._scorer, weight)
+            ctc_decode.set_kenlm_scorer_wc_weight(self._scorer, weight)
 
 
 class CTCBeamDecoder(BaseCTCBeamDecoder):
@@ -109,11 +110,11 @@ class CTCBeamDecoder(BaseCTCBeamDecoder):
                                              blank_index=blank_index, space_index=space_index)
         self._scorer = scorer
         self._decoder_type = self._scorer.get_scorer_type()
-        self._decoder = ctc._get_ctc_beam_decoder(self._num_classes, top_paths, beam_width, blank_index,
-                                                  self._scorer.get_scorer(), self._decoder_type)
+        self._decoder = ctc_decode.get_ctc_beam_decoder(self._num_classes, top_paths, beam_width, blank_index,
+                                                        self._scorer.get_scorer(), self._decoder_type)
 
     def set_label_selection_parameters(self, label_size=0, label_margin=-1):
-        ctc._set_label_selection_parameters(self._decoder, label_size, label_margin)
+        ctc_decode.set_label_selection_parameters(self._decoder, label_size, label_margin)
 
 
 def generate_lm_dict(dictionary_path, output_path, labels, kenlm_path=None, blank_index=0, space_index=28):
@@ -121,10 +122,10 @@ def generate_lm_dict(dictionary_path, output_path, labels, kenlm_path=None, blan
         raise ImportError("pytorch-ctc not compiled with KenLM support.")
     result = None
     if kenlm_path is not None:
-        result = ctc._generate_lm_dict(labels, len(labels), blank_index, space_index, kenlm_path.encode(),
-                                       dictionary_path.encode(), output_path.encode())
+        result = ctc_decode.generate_lm_dict(labels, len(labels), blank_index, space_index, kenlm_path.encode(),
+                                             dictionary_path.encode(), output_path.encode())
     else:
-        result = ctc._generate_dict(labels, len(labels), blank_index, space_index,
-                                    dictionary_path.encode(), output_path.encode())
+        result = ctc_decode.generate_dict(labels, len(labels), blank_index, space_index,
+                                          dictionary_path.encode(), output_path.encode())
     if result != 0:
         raise ValueError("Error encountered generating dictionary")

@@ -136,4 +136,4 @@ ENV/
 *.out
 *.app
 
-pytorch_ctc/ctcdecode.xcodeproj/
+ctcdecode/ctcdecode.xcodeproj/
