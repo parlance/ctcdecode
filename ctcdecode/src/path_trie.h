@@ -18,13 +18,14 @@ public:
   ~PathTrie();
 
   // get new prefix after appending new char
-  PathTrie* get_path_trie(int new_char, bool reset = true);
+  PathTrie* get_path_trie(int new_char, int new_timestep, bool reset = true);
 
   // get the prefix in index from root to current node
-  PathTrie* get_path_vec(std::vector<int>& output);
+  PathTrie* get_path_vec(std::vector<int>& output, std::vector<int>& timesteps);
 
   // get the prefix in index from some stop node to current nodel
   PathTrie* get_path_vec(std::vector<int>& output,
+                         std::vector<int>& timesteps,
                          int stop,
                          size_t max_steps = std::numeric_limits<size_t>::max());
 
@@ -48,6 +49,7 @@ public:
   float score;
   float approx_ctc;
   int character;
+  int timestep;
   PathTrie* parent;
 
 private:

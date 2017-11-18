@@ -7,15 +7,14 @@
 #include <map>
 #include <utility>
 
+#include "decoder_utils.h"
 #include "ThreadPool.h"
 #include "fst/fstlib.h"
-
-#include "decoder_utils.h"
 #include "path_trie.h"
 
 using FSTMATCH = fst::SortedMatcher<fst::StdVectorFst>;
 
-std::vector<std::pair<double, std::vector<int>>> ctc_beam_search_decoder(
+std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
     const std::vector<std::vector<double>> &probs_seq,
     const std::vector<std::string> &vocabulary,
     size_t beam_size,
@@ -96,7 +95,7 @@ std::vector<std::pair<double, std::vector<int>>> ctc_beam_search_decoder(
               prefix->log_prob_nb_cur, log_prob_c + prefix->log_prob_nb_prev);
         }
         // get new prefix
-        auto prefix_new = prefix->get_path_trie(c);
+        auto prefix_new = prefix->get_path_trie(c, time_step);
 
         if (prefix_new != nullptr) {
           float log_p = -NUM_FLT_INF;
@@ -172,7 +171,8 @@ std::vector<std::pair<double, std::vector<int>>> ctc_beam_search_decoder(
     double approx_ctc = prefixes[i]->score;
     if (ext_scorer != nullptr) {
       std::vector<int> output;
-      prefixes[i]->get_path_vec(output);
+      std::vector<int> timesteps;
+      prefixes[i]->get_path_vec(output, timesteps);
       auto prefix_length = output.size();
       auto words = ext_scorer->split_labels(output);
       // remove word insert
@@ -187,7 +187,7 @@ std::vector<std::pair<double, std::vector<int>>> ctc_beam_search_decoder(
 }
 
 
-std::vector<std::vector<std::pair<double, std::vector<int>>>>
+std::vector<std::vector<std::pair<double, Output>>>
 ctc_beam_search_decoder_batch(
     const std::vector<std::vector<std::vector<double>>> &probs_split,
     const std::vector<std::string> &vocabulary,
@@ -204,7 +204,7 @@ ctc_beam_search_decoder_batch(
   size_t batch_size = probs_split.size();
 
   // enqueue the tasks of decoding
-  std::vector<std::future<std::vector<std::pair<double, std::vector<int>>>>> res;
+  std::vector<std::future<std::vector<std::pair<double, Output>>>> res;
   for (size_t i = 0; i < batch_size; ++i) {
     res.emplace_back(pool.enqueue(ctc_beam_search_decoder,
                                   probs_split[i],
@@ -217,7 +217,7 @@ ctc_beam_search_decoder_batch(
   }
 
   // get decoding results
-  std::vector<std::vector<std::pair<double, std::vector<int>>>> batch_results;
+  std::vector<std::vector<std::pair<double, Output>>> batch_results;
   for (size_t i = 0; i < batch_size; ++i) {
     batch_results.emplace_back(res[i].get());
   }

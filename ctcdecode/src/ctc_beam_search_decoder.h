@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "scorer.h"
+#include "output.h"
 
 /* CTC Beam Search Decoder
 
@@ -23,7 +24,8 @@
  *     A vector that each element is a pair of score  and decoding result,
  *     in desending order.
 */
-std::vector<std::pair<double, std::vector<int>>> ctc_beam_search_decoder(
+
+std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
     const std::vector<std::vector<double>> &probs_seq,
     const std::vector<std::string> &vocabulary,
     size_t beam_size,
@@ -49,7 +51,7 @@ std::vector<std::pair<double, std::vector<int>>> ctc_beam_search_decoder(
  *     A 2-D vector that each element is a vector of beam search decoding
  *     result for one audio sample.
 */
-std::vector<std::vector<std::pair<double, std::vector<int>>>>
+std::vector<std::vector<std::pair<double, Output>>>
 ctc_beam_search_decoder_batch(
     const std::vector<std::vector<std::vector<double>>> &probs_split,
     const std::vector<std::string> &vocabulary,

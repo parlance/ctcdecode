@@ -16,6 +16,7 @@ int beam_decode(THFloatTensor *th_probs,
                 size_t blank_id,
                 void *scorer,
                 THIntTensor *th_output,
+                THIntTensor *th_timesteps,
                 THIntTensor *th_scores,
                 THIntTensor *th_seq_length)
 {
@@ -44,19 +45,22 @@ int beam_decode(THFloatTensor *th_probs,
         inputs.push_back(temp);
     }
 
-    std::vector<std::vector<std::pair<double, std::vector<int>>>> batch_results =
+    std::vector<std::vector<std::pair<double, Output>>> batch_results =
     ctc_beam_search_decoder_batch(inputs, new_vocab, beam_size, num_processes, cutoff_prob, cutoff_top_n, blank_id, ext_scorer);
 
     for (int b = 0; b < batch_results.size(); ++b){
-        std::vector<std::pair<double, std::vector<int>>> path_results = batch_results[b];
-        for (int p = 0; p < path_results.size();++p){
-            std::pair<double, std::vector<int>> n_path_result = path_results[p];
-            std::vector<int> output = n_path_result.second;
-            for (int t = 0; t < output.size(); ++t){
-                THIntTensor_set3d(th_output, b, p, t, output[t]); // fill output tokens
+        std::vector<std::pair<double, Output>> results = batch_results[b];
+        for (int p = 0; p < results.size();++p){
+            std::pair<double, Output> n_path_result = results[p];
+            Output output = n_path_result.second;
+            std::vector<int> output_tokens = output.tokens;
+            std::vector<int> output_timesteps = output.timesteps;
+            for (int t = 0; t < output_tokens.size(); ++t){
+                THIntTensor_set3d(th_output, b, p, t, output_tokens[t]); // fill output tokens
+                THIntTensor_set3d(th_timesteps, b, p, t, output_timesteps[t]); // fill timesteps tokens
             }
             THIntTensor_set2d(th_scores, b, p, n_path_result.first); // fill path scores
-            THIntTensor_set2d(th_seq_length, b, p, output.size());
+            THIntTensor_set2d(th_seq_length, b, p, output_tokens.size());
         }
     }
     return 1;
@@ -75,11 +79,12 @@ extern "C"
                                size_t cutoff_top_n,
                                size_t blank_id,
                                THIntTensor *th_output,
+                               THIntTensor *th_timesteps,
                                THIntTensor *th_scores,
                                THIntTensor *th_seq_length){
 
             return beam_decode(th_probs, labels, vocab_size, beam_size, num_processes,
-                        cutoff_prob, cutoff_top_n, blank_id,NULL, th_output, th_scores, th_seq_length);
+                        cutoff_prob, cutoff_top_n, blank_id,NULL, th_output, th_timesteps, th_scores, th_seq_length);
         }
 
         int paddle_beam_decode_lm(THFloatTensor *th_probs,
@@ -92,11 +97,12 @@ extern "C"
                                   size_t blank_id,
                                   void *scorer,
                                   THIntTensor *th_output,
+                                  THIntTensor *th_timesteps,
                                   THIntTensor *th_scores,
                                   THIntTensor *th_seq_length){
 
             return beam_decode(th_probs, labels, vocab_size, beam_size, num_processes,
-                        cutoff_prob, cutoff_top_n, blank_id,scorer, th_output, th_scores, th_seq_length);
+                        cutoff_prob, cutoff_top_n, blank_id,scorer, th_output, th_timesteps, th_scores, th_seq_length);
         }
 
 
