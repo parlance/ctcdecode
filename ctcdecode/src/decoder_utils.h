@@ -4,6 +4,7 @@
 #include <utility>
 #include "fst/log.h"
 #include "path_trie.h"
+#include "output.h"
 
 const float NUM_FLT_INF  = std::numeric_limits<float>::max();
 const float NUM_FLT_MIN  = std::numeric_limits<float>::min();
@@ -56,7 +57,7 @@ std::vector<std::pair<size_t, float>> get_pruned_log_probs(
     size_t cutoff_top_n);
 
 // Get beam search result from prefixes in trie tree
-std::vector<std::pair<double, std::vector<int>>> get_beam_search_result(
+std::vector<std::pair<double, Output>> get_beam_search_result(
     const std::vector<PathTrie *> &prefixes,
     size_t beam_size);
 

@@ -166,12 +166,13 @@ std::vector<std::string> Scorer::make_ngram(PathTrie* prefix) {
 
   for (int order = 0; order < max_order_; order++) {
     std::vector<int> prefix_vec;
+    std::vector<int> prefix_steps;
 
     if (is_character_based_) {
-      new_node = current_node->get_path_vec(prefix_vec, SPACE_ID_, 1);
+      new_node = current_node->get_path_vec(prefix_vec, prefix_steps, SPACE_ID_, 1);
       current_node = new_node;
     } else {
-      new_node = current_node->get_path_vec(prefix_vec, SPACE_ID_);
+      new_node = current_node->get_path_vec(prefix_vec, prefix_steps, SPACE_ID_);
       current_node = new_node->parent;  // Skipping spaces
     }
 

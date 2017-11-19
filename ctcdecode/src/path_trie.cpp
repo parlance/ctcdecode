@@ -17,6 +17,7 @@ PathTrie::PathTrie() {
 
   ROOT_ = -1;
   character = ROOT_;
+  timestep = 0;
   exists_ = true;
   parent = nullptr;
 
@@ -33,7 +34,7 @@ PathTrie::~PathTrie() {
   }
 }
 
-PathTrie* PathTrie::get_path_trie(int new_char, bool reset) {
+PathTrie* PathTrie::get_path_trie(int new_char, int new_timestep, bool reset) {
   auto child = children_.begin();
   for (child = children_.begin(); child != children_.end(); ++child) {
     if (child->first == new_char) {
@@ -65,6 +66,7 @@ PathTrie* PathTrie::get_path_trie(int new_char, bool reset) {
       } else {
         PathTrie* new_path = new PathTrie;
         new_path->character = new_char;
+        new_path->timestep = new_timestep;
         new_path->parent = this;
         new_path->dictionary_ = dictionary_;
         new_path->dictionary_state_ = matcher_->Value().nextstate;
@@ -76,6 +78,7 @@ PathTrie* PathTrie::get_path_trie(int new_char, bool reset) {
     } else {
       PathTrie* new_path = new PathTrie;
       new_path->character = new_char;
+      new_path->timestep = new_timestep;
       new_path->parent = this;
       children_.push_back(std::make_pair(new_char, new_path));
       return new_path;
@@ -83,19 +86,22 @@ PathTrie* PathTrie::get_path_trie(int new_char, bool reset) {
   }
 }
 
-PathTrie* PathTrie::get_path_vec(std::vector<int>& output) {
-  return get_path_vec(output, ROOT_);
+PathTrie* PathTrie::get_path_vec(std::vector<int>& output, std::vector<int>& timesteps) {
+  return get_path_vec(output, timesteps, ROOT_);
 }
 
 PathTrie* PathTrie::get_path_vec(std::vector<int>& output,
+                                 std::vector<int>& timesteps,
                                  int stop,
                                  size_t max_steps) {
   if (character == stop || character == ROOT_ || output.size() == max_steps) {
     std::reverse(output.begin(), output.end());
+    std::reverse(timesteps.begin(), timesteps.end());
     return this;
   } else {
     output.push_back(character);
-    return parent->get_path_vec(output, stop, max_steps);
+    timesteps.push_back(timestep);
+    return parent->get_path_vec(output, timesteps, stop, max_steps);
   }
 }
 

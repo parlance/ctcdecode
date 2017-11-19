@@ -21,18 +21,19 @@ class CTCBeamDecoder(object):
         probs = probs.cpu().float()
         batch_size, max_seq_len = probs.size(0), probs.size(1)
         output = torch.IntTensor(batch_size, self._beam_width, max_seq_len).cpu().int()
+        timesteps = torch.IntTensor(batch_size, self._beam_width, max_seq_len).cpu().int()
         scores = torch.IntTensor(batch_size, self._beam_width).cpu().int()
         out_seq_len = torch.IntTensor(batch_size, self._beam_width).cpu().int()
         if self._scorer:
             ctc_decode.paddle_beam_decode_lm(probs, self._labels, len(self._labels), self._beam_width,
                                              self._num_processes, self._cutoff_prob, self.cutoff_top_n, self._blank_id,
-                                             self._scorer, output, scores, out_seq_len)
+                                             self._scorer, output, timesteps, scores, out_seq_len)
         else:
             ctc_decode.paddle_beam_decode(probs, self._labels, len(self._labels), self._beam_width, self._num_processes,
-                                          self._cutoff_prob, self.cutoff_top_n, self._blank_id, output, scores,
-                                          out_seq_len)
+                                          self._cutoff_prob, self.cutoff_top_n, self._blank_id, output, timesteps,
+                                          scores, out_seq_len)
 
-        return output, scores, out_seq_len
+        return output, scores, timesteps, out_seq_len
 
     def character_based(self):
         return ctc_decode.is_character_based(self._scorer) if self._scorer else None
