@@ -1,1 +1,3 @@
+torch
+wget
 cffi>=1.0.0
