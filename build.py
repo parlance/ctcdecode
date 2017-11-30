@@ -7,14 +7,21 @@ import tarfile
 import wget
 from torch.utils.ffi import create_extension
 
-# Download/Extract openfst
-dl_path = 'third_party/openfst-1.6.3.tar.gz'
-if not os.path.isfile(dl_path):
-    wget.download('http://www.openfst.org/twiki/pub/FST/FstDownload/openfst-1.6.3.tar.gz',
-                  out=dl_path)
-tar = tarfile.open(dl_path)
-tar.extractall('third_party/')
-tar.close()
+
+def download_extract(url, dl_path):
+    if not os.path.isfile(dl_path):
+        wget.download(url,
+                      out=dl_path)
+    tar = tarfile.open(dl_path)
+    tar.extractall('third_party/')
+    tar.close()
+
+
+# Download/Extract openfst, boost
+download_extract('http://www.openfst.org/twiki/pub/FST/FstDownload/openfst-1.6.3.tar.gz',
+                 'third_party/openfst-1.6.3.tar.gz')
+download_extract('https://sourceforge.net/projects/boost/files/boost/1.63.0/boost_1_63_0.tar.gz',
+                 'third_party/boost_1_63_0.tar.gz')
 
 
 # Does gcc compile with this header and library?
