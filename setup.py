@@ -47,7 +47,7 @@ setup(
     author="Ryan Leary",
     author_email="ryanleary@gmail.com",
     install_requires=["cffi>=1.0.0"],
-    setup_requires=["cffi>=1.0.0"],
+    setup_requires=["cffi>=1.0.0", "wget"],
     # Exclude the build files.
     packages=find_packages(exclude=["build"]),
     ext_package="",
