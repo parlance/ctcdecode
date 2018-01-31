@@ -17,11 +17,14 @@ class CTCBeamDecoder(object):
                                                         self._num_labels)
         self._cutoff_prob = cutoff_prob
 
-    def decode(self, probs, seq_lens):
+    def decode(self, probs, seq_lens=None):
         # We expect batch x seq x label_size
         probs = probs.cpu().float()
-        seq_lens = seq_lens.cpu().int()
         batch_size, max_seq_len = probs.size(0), probs.size(1)
+        if seq_lens is None:
+            seq_lens = torch.IntTensor(batch_size).fill_(max_seq_len)
+        else:
+            seq_lens = seq_lens.cpu().int()
         output = torch.IntTensor(batch_size, self._beam_width, max_seq_len).cpu().int()
         timesteps = torch.IntTensor(batch_size, self._beam_width, max_seq_len).cpu().int()
         scores = torch.IntTensor(batch_size, self._beam_width).cpu().int()
