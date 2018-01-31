@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -48,7 +49,8 @@ int beam_decode(THFloatTensor *th_probs,
     
     std::vector<std::vector<std::vector<double>>> inputs;
     for (int b=0; b < batch_size; ++b) {
-        int seq_len = THIntTensor_get1d(th_seq_lens, b);
+        // avoid a crash by ensuring that an erroneous seq_len doesn't have us try to access memory we shouldn't
+        int seq_len = std::min(THIntTensor_get1d(th_seq_lens, b), (int)max_time); 
         std::vector<std::vector<double>> temp (seq_len, std::vector<double>(num_classes));
         for (int t=0; t < seq_len; ++t) {
             for (int n=0; n < num_classes; ++n) {
