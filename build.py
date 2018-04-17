@@ -18,8 +18,8 @@ def download_extract(url, dl_path):
 
 
 # Download/Extract openfst, boost
-download_extract('http://www.openfst.org/twiki/pub/FST/FstDownload/openfst-1.6.3.tar.gz',
-                 'third_party/openfst-1.6.3.tar.gz')
+download_extract('https://sites.google.com/site/openfst/home/openfst-down/openfst-1.6.7.tar.gz',
+                 'third_party/openfst-1.6.7.tar.gz')
 download_extract('https://sourceforge.net/projects/boost/files/boost/1.63.0/boost_1_63_0.tar.gz',
                  'third_party/boost_1_63_0.tar.gz')
 
@@ -47,10 +47,10 @@ if compile_test('lzma.h', 'lzma'):
     compile_args.append('-DHAVE_XZLIB')
     ext_libs.append('lzma')
 
-third_party_libs = ["kenlm", "openfst-1.6.3/src/include", "ThreadPool", "boost_1_63_0", "utf8"]
+third_party_libs = ["kenlm", "openfst-1.6.7/src/include", "ThreadPool", "boost_1_63_0", "utf8"]
 compile_args.extend(['-DINCLUDE_KENLM', '-DKENLM_MAX_ORDER=6'])
 lib_sources = glob.glob('third_party/kenlm/util/*.cc') + glob.glob('third_party/kenlm/lm/*.cc') + glob.glob(
-    'third_party/kenlm/util/double-conversion/*.cc') + glob.glob('third_party/openfst-1.6.3/src/lib/*.cc')
+    'third_party/kenlm/util/double-conversion/*.cc') + glob.glob('third_party/openfst-1.6.7/src/lib/*.cc')
 lib_sources = [fn for fn in lib_sources if not (fn.endswith('main.cc') or fn.endswith('test.cc'))]
 
 third_party_includes = [os.path.realpath(os.path.join("third_party", lib)) for lib in third_party_libs]
