@@ -3,6 +3,7 @@
 import glob
 import os
 import tarfile
+import warnings
 
 import wget
 from torch.utils.ffi import create_extension
@@ -10,8 +11,11 @@ from torch.utils.ffi import create_extension
 
 def download_extract(url, dl_path):
     if not os.path.isfile(dl_path):
-        wget.download(url,
-                      out=dl_path)
+        # Already downloaded
+        wget.download(url, out=dl_path)
+    if dl_path.endswith(".tar.gz") and os.path.isdir(dl_path[:-len(".tar.gz")]):
+        # Already extracted
+        return
     tar = tarfile.open(dl_path)
     tar.extractall('third_party/')
     tar.close()
@@ -22,6 +26,10 @@ download_extract('https://sites.google.com/site/openfst/home/openfst-down/openfs
                  'third_party/openfst-1.6.7.tar.gz')
 download_extract('https://sourceforge.net/projects/boost/files/boost/1.63.0/boost_1_63_0.tar.gz',
                  'third_party/boost_1_63_0.tar.gz')
+
+for file in ['third_party/kenlm/setup.py', 'third_party/ThreadPool/ThreadPool.h']:
+    if not os.path.exists(file):
+        warnings.warn('File `{}` does not appear to be present. Did you forget `git submodule update`?'.format(file))
 
 
 # Does gcc compile with this header and library?
