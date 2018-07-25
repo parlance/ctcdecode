@@ -199,7 +199,7 @@ void Scorer::fill_dictionary(bool add_space) {
   int dict_size = 0;
   for (const auto& word : vocabulary_) {
     bool added = add_word_to_dictionary(
-        word, char_map_, add_space, SPACE_ID_, &dictionary);
+        word, char_map_, add_space, SPACE_ID_ + 1, &dictionary);
     dict_size += added ? 1 : 0;
   }
 
