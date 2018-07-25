@@ -40,7 +40,7 @@ def compile_test(header, library):
     return os.system(command) == 0
 
 
-compile_args = ['-O3', '-DNDEBUG', '-DKENLM_MAX_ORDER=6', '-std=c++11', '-fPIC', '-w']
+compile_args = ['-O3', '-DNDEBUG', '-DKENLM_MAX_ORDER=6', '-std=c++11', '-fPIC', '-std=c99', '-w']
 ext_libs = ['stdc++']
 
 if compile_test('zlib.h', 'z'):
