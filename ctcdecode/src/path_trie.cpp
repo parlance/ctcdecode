@@ -69,9 +69,22 @@ PathTrie* PathTrie::get_path_trie(int new_char, int new_timestep, bool reset) {
         new_path->timestep = new_timestep;
         new_path->parent = this;
         new_path->dictionary_ = dictionary_;
-        new_path->dictionary_state_ = matcher_->Value().nextstate;
         new_path->has_dictionary_ = true;
         new_path->matcher_ = matcher_;
+
+        // set spell checker state
+        // check to see if next state is final
+        auto FSTZERO = fst::TropicalWeight::Zero();
+        auto final_weight = dictionary_->Final(matcher_->Value().nextstate);
+        bool is_final = (final_weight != FSTZERO);
+        if (is_final && reset) {
+	  // restart spell checker at the start state
+          new_path->dictionary_state_ = dictionary_->Start();
+        } else {
+	  // go to next state
+          new_path->dictionary_state_ = matcher_->Value().nextstate;
+        }
+
         children_.push_back(std::make_pair(new_char, new_path));
         return new_path;
       }
