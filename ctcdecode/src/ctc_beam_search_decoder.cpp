@@ -21,6 +21,7 @@ std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
     double cutoff_prob,
     size_t cutoff_top_n,
     size_t blank_id,
+    const std::string &space_symbol,
     Scorer *ext_scorer) {
   // dimension check
   size_t num_time_steps = probs_seq.size();
@@ -35,7 +36,9 @@ std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
   // size_t blank_id = vocabulary.size();
 
   // assign space id
-  auto it = std::find(vocabulary.begin(), vocabulary.end(), " ");
+  // Changed by Gideon from the blank symbol " " to a custom symbol specified as argument
+  auto it = std::find(vocabulary.begin(), vocabulary.end(), space_symbol);
+  //auto it = std::find(vocabulary.begin(), vocabulary.end(), " ");
   int space_id = it - vocabulary.begin();
   // if no space in vocabulary
   if ((size_t)space_id >= vocabulary.size()) {
@@ -174,7 +177,7 @@ std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
       std::vector<int> timesteps;
       prefixes[i]->get_path_vec(output, timesteps);
       auto prefix_length = output.size();
-      auto words = ext_scorer->split_labels(output);
+      auto words = ext_scorer->split_labels(output, space_symbol);
       // remove word insert
       approx_ctc = approx_ctc - prefix_length * ext_scorer->beta;
       // remove language model weight:
@@ -196,6 +199,7 @@ ctc_beam_search_decoder_batch(
     double cutoff_prob,
     size_t cutoff_top_n,
     size_t blank_id,
+    const std::string &space_symbol,
     Scorer *ext_scorer) {
   VALID_CHECK_GT(num_processes, 0, "num_processes must be nonnegative!");
   // thread pool
@@ -213,6 +217,7 @@ ctc_beam_search_decoder_batch(
                                   cutoff_prob,
                                   cutoff_top_n,
                                   blank_id,
+				  space_symbol,
                                   ext_scorer));
   }
 

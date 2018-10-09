@@ -153,7 +153,8 @@ bool add_word_to_dictionary(
   std::vector<int> int_word;
 
   for (auto &c : characters) {
-    if (c == " ") {
+    // if (c == " ") {
+    if (c == "|") {   // Gideon: replaced the space symbol " " => "|"
       int_word.push_back(SPACE_ID);
     } else {
       auto int_c = char_map.find(c);

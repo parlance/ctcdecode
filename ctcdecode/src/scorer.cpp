@@ -16,7 +16,8 @@ using namespace lm::ngram;
 Scorer::Scorer(double alpha,
                double beta,
                const std::string& lm_path,
-               const std::vector<std::string>& vocab_list) {
+               const std::vector<std::string>& vocab_list,
+               const std::string &space_symbol) {
   this->alpha = alpha;
   this->beta = beta;
 
@@ -28,7 +29,7 @@ Scorer::Scorer(double alpha,
   dict_size_ = 0;
   SPACE_ID_ = -1;
 
-  setup(lm_path, vocab_list);
+  setup(lm_path, vocab_list, space_symbol);
 }
 
 Scorer::~Scorer() {
@@ -41,11 +42,12 @@ Scorer::~Scorer() {
 }
 
 void Scorer::setup(const std::string& lm_path,
-                   const std::vector<std::string>& vocab_list) {
+                   const std::vector<std::string>& vocab_list,
+                   const std::string &space_symbol) {
   // load language model
   load_lm(lm_path);
   // set char map for scorer
-  set_char_map(vocab_list);
+  set_char_map(vocab_list, space_symbol);
   // fill the dictionary for FST
   if (!is_character_based()) {
     fill_dictionary(true);
@@ -79,10 +81,14 @@ double Scorer::get_log_cond_prob(const std::vector<std::string>& words) {
   model->NullContextWrite(&state);
   for (size_t i = 0; i < words.size(); ++i) {
     lm::WordIndex word_index = model->BaseVocabulary().Index(words[i]);
+    
     // encounter OOV
     if (word_index == 0) {
       return OOV_SCORE;
     }
+    // Gideon: Alternatively, comment out above (but in fact, it doesn't seem to work better) 
+    // Rather than using hard-code OOV score, assign the language model  <UNK> probability to the OOV words.
+    // See: https://github.com/parlance/ctcdecode/issues/62 	
     cond_prob = model->BaseScore(&state, word_index, &out_state);
     tmp_state = state;
     state = out_state;
@@ -132,7 +138,7 @@ std::string Scorer::vec2str(const std::vector<int>& input) {
   return word;
 }
 
-std::vector<std::string> Scorer::split_labels(const std::vector<int>& labels) {
+std::vector<std::string> Scorer::split_labels(const std::vector<int>& labels, const std::string &space_symbol) {
   if (labels.empty()) return {};
 
   std::string s = vec2str(labels);
@@ -140,18 +146,20 @@ std::vector<std::string> Scorer::split_labels(const std::vector<int>& labels) {
   if (is_character_based_) {
     words = split_utf8_str(s);
   } else {
-    words = split_str(s, " ");
+    // words = split_str(s, " ");
+    words = split_str(s, space_symbol);  //Gideon: replaced the space character from " " to a custom string
   }
   return words;
 }
 
-void Scorer::set_char_map(const std::vector<std::string>& char_list) {
+void Scorer::set_char_map(const std::vector<std::string>& char_list, const std::string &space_symbol) {
   char_list_ = char_list;
   char_map_.clear();
 
   for (size_t i = 0; i < char_list_.size(); i++) {
-    if (char_list_[i] == " ") {
-      SPACE_ID_ = i;
+    //if (char_list_[i] == " ") {
+    if (char_list_[i] == space_symbol) { //Gideon: replaced the space character from " " to a custom string
+     SPACE_ID_ = i;
     }
     // The initial state of FST is state 0, hence the index of chars in
     // the FST should start from 1 to avoid the conflict with the initial

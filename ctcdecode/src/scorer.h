@@ -43,7 +43,8 @@ public:
   Scorer(double alpha,
          double beta,
          const std::string &lm_path,
-         const std::vector<std::string> &vocabulary);
+         const std::vector<std::string> &vocabulary,
+         const std::string &space_symbol);
   ~Scorer();
 
   double get_log_cond_prob(const std::vector<std::string> &words);
@@ -67,7 +68,7 @@ public:
 
   // trransform the labels in index to the vector of words (word based lm) or
   // the vector of characters (character based lm)
-  std::vector<std::string> split_labels(const std::vector<int> &labels);
+  std::vector<std::string> split_labels(const std::vector<int> &labels, const std::string &space_symbol);
 
   // language model weight
   double alpha;
@@ -80,7 +81,8 @@ public:
 protected:
   // necessary setup: load language model, set char map, fill FST's dictionary
   void setup(const std::string &lm_path,
-             const std::vector<std::string> &vocab_list);
+             const std::vector<std::string> &vocab_list,
+             const std::string &space_symbo);
 
   // load language model from given path
   void load_lm(const std::string &lm_path);
@@ -89,7 +91,7 @@ protected:
   void fill_dictionary(bool add_space);
 
   // set char map
-  void set_char_map(const std::vector<std::string> &char_list);
+  void set_char_map(const std::vector<std::string> &char_list, const std::string &space_symbol);
 
   double get_log_prob(const std::vector<std::string> &words);
 

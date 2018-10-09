@@ -31,6 +31,7 @@ int beam_decode(THFloatTensor *th_probs,
                 double cutoff_prob,
                 size_t cutoff_top_n,
                 size_t blank_id,
+		const std::string &space_symbol,	
                 void *scorer,
                 THIntTensor *th_output,
                 THIntTensor *th_timesteps,
@@ -62,7 +63,7 @@ int beam_decode(THFloatTensor *th_probs,
     }
 
     std::vector<std::vector<std::pair<double, Output>>> batch_results =
-    ctc_beam_search_decoder_batch(inputs, new_vocab, beam_size, num_processes, cutoff_prob, cutoff_top_n, blank_id, ext_scorer);
+    ctc_beam_search_decoder_batch(inputs, new_vocab, beam_size, num_processes, cutoff_prob, cutoff_top_n, blank_id, space_symbol, ext_scorer);
 
     for (int b = 0; b < batch_results.size(); ++b){
         std::vector<std::pair<double, Output>> results = batch_results[b];
@@ -95,13 +96,15 @@ extern "C"
                                double cutoff_prob,
                                size_t cutoff_top_n,
                                size_t blank_id,
+			       const char* space_symbol,
                                THIntTensor *th_output,
                                THIntTensor *th_timesteps,
                                THFloatTensor *th_scores,
                                THIntTensor *th_out_length){
 
+	    std::string space_symbol_string(space_symbol);	
             return beam_decode(th_probs, th_seq_lens, labels, vocab_size, beam_size, num_processes,
-                        cutoff_prob, cutoff_top_n, blank_id,NULL, th_output, th_timesteps, th_scores, th_out_length);
+                        cutoff_prob, cutoff_top_n, blank_id, space_symbol_string, NULL, th_output, th_timesteps, th_scores, th_out_length);
         }
 
         int paddle_beam_decode_lm(THFloatTensor *th_probs,
@@ -113,14 +116,16 @@ extern "C"
                                   double cutoff_prob,
                                   size_t cutoff_top_n,
                                   size_t blank_id,
+				  const char* space_symbol,
                                   void *scorer,
                                   THIntTensor *th_output,
                                   THIntTensor *th_timesteps,
                                   THFloatTensor *th_scores,
                                   THIntTensor *th_out_length){
 
+	    std::string space_symbol_string(space_symbol);	
             return beam_decode(th_probs, th_seq_lens, labels, vocab_size, beam_size, num_processes,
-                        cutoff_prob, cutoff_top_n, blank_id,scorer, th_output, th_timesteps, th_scores, th_out_length);
+                        cutoff_prob, cutoff_top_n, blank_id, space_symbol_string, scorer, th_output, th_timesteps, th_scores, th_out_length);
         }
 
 
@@ -128,10 +133,13 @@ extern "C"
                             double beta,
                             const char* lm_path,
                             const char* labels,
-                            int vocab_size) {
+                            int vocab_size,
+                            const char* space_symbol) {
         std::vector<std::string> new_vocab;
         utf8_to_utf8_char_vec(labels, new_vocab);
-        Scorer* scorer = new Scorer(alpha, beta, lm_path, new_vocab);
+	// Create a string object from the char* space_symbol
+	std::string space_symbol_string(space_symbol);		
+        Scorer* scorer = new Scorer(alpha, beta, lm_path, new_vocab, space_symbol_string);
         return static_cast<void*>(scorer);
     }
 
