@@ -4,8 +4,8 @@ from __future__ import division
 from __future__ import print_function
 
 import unittest
-import ctcdecode
 import torch
+import ctcdecode
 
 
 class TestDecoders(unittest.TestCase):

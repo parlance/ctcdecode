@@ -6,7 +6,8 @@ import tarfile
 import warnings
 
 import wget
-from torch.utils.ffi import create_extension
+import setuptools
+from torch.utils.cpp_extension import CppExtension, include_paths
 
 
 def download_extract(url, dl_path):
@@ -40,9 +41,8 @@ def compile_test(header, library):
     return os.system(command) == 0
 
 
-compile_args = ['-O3', '-DNDEBUG', '-DKENLM_MAX_ORDER=6', '-std=c++11', '-fPIC', '-std=c99', '-w']
-ext_libs = ['stdc++']
-
+compile_args = ['-O3', '-DKENLM_MAX_ORDER=6', '-std=c++11', '-fPIC']
+ext_libs = []
 if compile_test('zlib.h', 'z'):
     compile_args.append('-DHAVE_ZLIB')
     ext_libs.append('z')
@@ -63,19 +63,16 @@ lib_sources = [fn for fn in lib_sources if not (fn.endswith('main.cc') or fn.end
 
 third_party_includes = [os.path.realpath(os.path.join("third_party", lib)) for lib in third_party_libs]
 ctc_sources = glob.glob('ctcdecode/src/*.cpp')
-ctc_headers = ['ctcdecode/src/binding.h', ]
 
-ffi = create_extension(
-    name='ctcdecode._ext.ctc_decode',
-    package=True,
-    language='c++',
-    headers=ctc_headers,
-    sources=ctc_sources + lib_sources,
-    include_dirs=third_party_includes,
-    with_cuda=False,
-    libraries=ext_libs,
-    extra_compile_args=compile_args
-)
 
-if __name__ == '__main__':
-    ffi.build()
+extension = CppExtension(
+   name='ctcdecode._ext.ctc_decode',
+   package=True,
+   with_cuda=False,
+   sources=ctc_sources + lib_sources,
+   include_dirs=third_party_includes + include_paths(),
+   libraries=ext_libs,
+   extra_compile_args=compile_args,
+   language='c++')
+
+

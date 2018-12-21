@@ -3,6 +3,7 @@ import multiprocessing.pool
 import os
 
 from setuptools import setup, find_packages, distutils
+from torch.utils.cpp_extension import BuildExtension
 
 this_file = os.path.dirname(__file__)
 
@@ -39,6 +40,8 @@ def parallelCCompile(self,
 
 # hack compile to support parallel compiling
 distutils.ccompiler.CCompiler.compile = parallelCCompile
+import build 
+
 setup(
     name="ctcdecode",
     version="0.3",
@@ -46,12 +49,8 @@ setup(
     url="https://github.com/parlance/ctcdecode",
     author="Ryan Leary",
     author_email="ryanleary@gmail.com",
-    install_requires=["cffi>=1.0.0"],
-    setup_requires=["cffi>=1.0.0", "wget"],
     # Exclude the build files.
     packages=find_packages(exclude=["build"]),
-    ext_package="",
-    cffi_modules=[
-        os.path.join(this_file, "build.py:ffi")
-    ]
+    ext_modules = [build.extension],
+    cmdclass={'build_ext': BuildExtension}
 )
