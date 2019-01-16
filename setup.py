@@ -44,7 +44,7 @@ import build
 
 setup(
     name="ctcdecode",
-    version="0.3",
+    version="0.4",
     description="CTC Decoder for PyTorch based on Paddle Paddle's implementation",
     url="https://github.com/parlance/ctcdecode",
     author="Ryan Leary",
