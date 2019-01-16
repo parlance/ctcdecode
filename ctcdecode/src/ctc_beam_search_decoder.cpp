@@ -67,8 +67,9 @@ std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
       size_t num_prefixes = std::min(prefixes.size(), beam_size);
       std::sort(
           prefixes.begin(), prefixes.begin() + num_prefixes, prefix_compare);
+      float blank_prob = log_input ? prob[blank_id] : std::log(prob[blank_id]);
       min_cutoff = prefixes[num_prefixes - 1]->score +
-                   std::log(std::exp(prob[blank_id])) - std::max(0.0, ext_scorer->beta);
+                   blank_prob - std::max(0.0, ext_scorer->beta);
       full_beam = (num_prefixes == beam_size);
     }
 
