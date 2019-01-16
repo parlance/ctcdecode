@@ -91,8 +91,6 @@ int beam_decode(at::Tensor th_probs,
     return 1;
 }
 
-
-
 int paddle_beam_decode(at::Tensor th_probs,
                        at::Tensor th_seq_lens,
                        const char* labels,
