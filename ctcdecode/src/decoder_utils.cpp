@@ -7,7 +7,8 @@
 std::vector<std::pair<size_t, float>> get_pruned_log_probs(
     const std::vector<double> &prob_step,
     double cutoff_prob,
-    size_t cutoff_top_n) {
+    size_t cutoff_top_n,
+    bool log_input) {
   std::vector<std::pair<int, double>> prob_idx;
   double log_cutoff_prob = log(cutoff_prob);
   for (size_t i = 0; i < prob_step.size(); ++i) {
@@ -22,7 +23,7 @@ std::vector<std::pair<size_t, float>> get_pruned_log_probs(
       double cum_prob = 0.0;
       cutoff_len = 0;
       for (size_t i = 0; i < prob_idx.size(); ++i) {
-        cum_prob = log_sum_exp(cum_prob, prob_idx[i].second);
+        cum_prob = log_sum_exp(cum_prob, log_input ? prob_idx[i].second : log(prob_idx[i].second) );
         cutoff_len += 1;
         if (cum_prob >= cutoff_prob || cutoff_len >= cutoff_top_n) break;
       }
@@ -33,7 +34,7 @@ std::vector<std::pair<size_t, float>> get_pruned_log_probs(
   std::vector<std::pair<size_t, float>> log_prob_idx;
   for (size_t i = 0; i < cutoff_len; ++i) {
     log_prob_idx.push_back(std::pair<int, float>(
-        prob_idx[i].first, prob_idx[i].second + NUM_FLT_MIN));
+        prob_idx[i].first, log_input ? prob_idx[i].second : log(prob_idx[i].second + NUM_FLT_MIN)));
   }
   return log_prob_idx;
 }

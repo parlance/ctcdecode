@@ -16,6 +16,7 @@ using FSTMATCH = fst::SortedMatcher<fst::StdVectorFst>;
 
 std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
     const std::vector<std::vector<double>> &probs_seq,
+    bool log_input,
     const std::vector<std::string> &vocabulary,
     size_t beam_size,
     double cutoff_prob,
@@ -72,7 +73,7 @@ std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
     }
 
     std::vector<std::pair<size_t, float>> log_prob_idx =
-        get_pruned_log_probs(prob, cutoff_prob, cutoff_top_n);
+        get_pruned_log_probs(prob, cutoff_prob, cutoff_top_n, log_input);
     // loop over chars
     for (size_t index = 0; index < log_prob_idx.size(); index++) {
       auto c = log_prob_idx[index].first;
@@ -190,6 +191,7 @@ std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
 std::vector<std::vector<std::pair<double, Output>>>
 ctc_beam_search_decoder_batch(
     const std::vector<std::vector<std::vector<double>>> &probs_split,
+    bool log_input,
     const std::vector<std::string> &vocabulary,
     size_t beam_size,
     size_t num_processes,
@@ -207,6 +209,7 @@ ctc_beam_search_decoder_batch(
   std::vector<std::future<std::vector<std::pair<double, Output>>>> res;
   for (size_t i = 0; i < batch_size; ++i) {
     res.emplace_back(pool.enqueue(ctc_beam_search_decoder,
+                                  log_input,
                                   probs_split[i],
                                   vocabulary,
                                   beam_size,

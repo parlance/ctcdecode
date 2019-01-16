@@ -27,6 +27,7 @@
 
 std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
     const std::vector<std::vector<double>> &probs_seq,
+    bool log_input,
     const std::vector<std::string> &vocabulary,
     size_t beam_size,
     double cutoff_prob = 1.0,
@@ -54,6 +55,7 @@ std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
 std::vector<std::vector<std::pair<double, Output>>>
 ctc_beam_search_decoder_batch(
     const std::vector<std::vector<std::vector<double>>> &probs_split,
+    bool log_input,
     const std::vector<std::string> &vocabulary,
     size_t beam_size,
     size_t num_processes,
