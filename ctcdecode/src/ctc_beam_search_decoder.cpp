@@ -16,12 +16,12 @@ using FSTMATCH = fst::SortedMatcher<fst::StdVectorFst>;
 
 std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
     const std::vector<std::vector<double>> &probs_seq,
-    bool log_input,
     const std::vector<std::string> &vocabulary,
     size_t beam_size,
     double cutoff_prob,
     size_t cutoff_top_n,
     size_t blank_id,
+    int log_input,
     Scorer *ext_scorer) {
   // dimension check
   size_t num_time_steps = probs_seq.size();
@@ -191,13 +191,13 @@ std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
 std::vector<std::vector<std::pair<double, Output>>>
 ctc_beam_search_decoder_batch(
     const std::vector<std::vector<std::vector<double>>> &probs_split,
-    bool log_input,
     const std::vector<std::string> &vocabulary,
     size_t beam_size,
     size_t num_processes,
     double cutoff_prob,
     size_t cutoff_top_n,
     size_t blank_id,
+    int log_input,
     Scorer *ext_scorer) {
   VALID_CHECK_GT(num_processes, 0, "num_processes must be nonnegative!");
   // thread pool
@@ -209,13 +209,13 @@ ctc_beam_search_decoder_batch(
   std::vector<std::future<std::vector<std::pair<double, Output>>>> res;
   for (size_t i = 0; i < batch_size; ++i) {
     res.emplace_back(pool.enqueue(ctc_beam_search_decoder,
-                                  log_input,
                                   probs_split[i],
                                   vocabulary,
                                   beam_size,
                                   cutoff_prob,
                                   cutoff_top_n,
                                   blank_id,
+                                  log_input,
                                   ext_scorer));
   }
 

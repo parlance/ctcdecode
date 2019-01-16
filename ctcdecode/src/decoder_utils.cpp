@@ -8,7 +8,7 @@ std::vector<std::pair<size_t, float>> get_pruned_log_probs(
     const std::vector<double> &prob_step,
     double cutoff_prob,
     size_t cutoff_top_n,
-    bool log_input) {
+    int log_input) {
   std::vector<std::pair<int, double>> prob_idx;
   double log_cutoff_prob = log(cutoff_prob);
   for (size_t i = 0; i < prob_step.size(); ++i) {
