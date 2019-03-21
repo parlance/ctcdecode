@@ -1,11 +1,18 @@
 #!/usr/bin/env python
 import multiprocessing.pool
 import os
-
+import subprocess
+import sys
 from setuptools import setup, find_packages, distutils
 from torch.utils.cpp_extension import BuildExtension
 
+
+def install(package):
+    subprocess.call([sys.executable, "-m", "pip", "install", package])
+
+
 this_file = os.path.dirname(__file__)
+install('wget')
 
 
 # monkey-patch for parallel compilation
@@ -40,7 +47,7 @@ def parallelCCompile(self,
 
 # hack compile to support parallel compiling
 distutils.ccompiler.CCompiler.compile = parallelCCompile
-import build 
+import build
 
 setup(
     name="ctcdecode",
