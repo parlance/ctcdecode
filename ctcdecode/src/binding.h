@@ -35,6 +35,8 @@ void* paddle_get_scorer(double alpha,
                         const char* labels,
                         int vocab_size);
 
+void paddle_release_scorer(void* scorer);
+
 int is_character_based(void *scorer);
 size_t get_max_order(void *scorer);
 size_t get_dict_size(void *scorer);
