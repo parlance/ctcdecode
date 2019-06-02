@@ -6,7 +6,7 @@ from __future__ import print_function
 import unittest
 import torch
 import ctcdecode
-
+import os
 
 class TestDecoders(unittest.TestCase):
     def setUp(self):
@@ -51,7 +51,7 @@ class TestDecoders(unittest.TestCase):
             0.05294827, 0.22298418
         ]]
         self.greedy_result = ["ac'bdc", "b'da"]
-        self.beam_search_result = ['acdc', "b'a"]
+        self.beam_search_result = ['acdc', "b'a", "a a"]
 
     def convert_to_string(self, tokens, vocab, seq_len):
         return ''.join([vocab[x] for x in tokens[0:seq_len]])
@@ -71,6 +71,17 @@ class TestDecoders(unittest.TestCase):
         beam_result, beam_scores, timesteps, out_seq_len = decoder.decode(probs_seq)
         output_str = self.convert_to_string(beam_result[0][0], self.vocab_list, out_seq_len[0][0])
         self.assertEqual(output_str, self.beam_search_result[1])
+
+    def test_beam_search_decoder_3(self):
+        lm_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'test.arpa')
+        probs_seq = torch.FloatTensor([self.probs_seq2])
+
+        decoder = ctcdecode.CTCBeamDecoder(self.vocab_list, beam_width=self.beam_size,
+                                           blank_id=self.vocab_list.index('_'),
+                                           model_path=lm_path)
+        beam_result, beam_scores, timesteps, out_seq_len = decoder.decode(probs_seq)
+        output_str = self.convert_to_string(beam_result[0][0], self.vocab_list, out_seq_len[0][0])
+        self.assertEqual(output_str, self.beam_search_result[2])
 
     def test_beam_search_decoder_batch(self):
         probs_seq = torch.FloatTensor([self.probs_seq1, self.probs_seq2])
@@ -92,6 +103,7 @@ class TestDecoders(unittest.TestCase):
         output_str2 = self.convert_to_string(beam_results[1][0], self.vocab_list, out_seq_len[1][0])
         self.assertEqual(output_str1, self.beam_search_result[0])
         self.assertEqual(output_str2, self.beam_search_result[1])
+
 
 
 if __name__ == '__main__':
