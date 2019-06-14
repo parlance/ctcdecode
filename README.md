@@ -5,7 +5,7 @@ C++ code borrowed liberally from Paddle Paddles' [DeepSpeech](https://github.com
 It includes swappable scorer support enabling standard beam search, and KenLM-based decoding.
 
 ## Installation
-The library is largely self-contained and requires only PyTorch and CFFI. Building the C++ library requires gcc or clang. KenLM language modeling support is also optionally included, and enabled by default.
+The library is largely self-contained and requires only PyTorch 1.0. Building the C++ library requires gcc or clang. KenLM language modeling support is also optionally included, and enabled by default.
 
 ```bash
 # get the code

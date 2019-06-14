@@ -4,8 +4,8 @@ from __future__ import division
 from __future__ import print_function
 
 import unittest
-import ctcdecode
 import torch
+import ctcdecode
 
 
 class TestDecoders(unittest.TestCase):
@@ -76,6 +76,17 @@ class TestDecoders(unittest.TestCase):
         probs_seq = torch.FloatTensor([self.probs_seq1, self.probs_seq2])
         decoder = ctcdecode.CTCBeamDecoder(self.vocab_list, beam_width=self.beam_size,
                                            blank_id=self.vocab_list.index('_'), num_processes=24)
+        beam_results, beam_scores, timesteps, out_seq_len = decoder.decode(probs_seq)
+        output_str1 = self.convert_to_string(beam_results[0][0], self.vocab_list, out_seq_len[0][0])
+        output_str2 = self.convert_to_string(beam_results[1][0], self.vocab_list, out_seq_len[1][0])
+        self.assertEqual(output_str1, self.beam_search_result[0])
+        self.assertEqual(output_str2, self.beam_search_result[1])
+    
+    def test_beam_search_decoder_batch_log(self):
+        probs_seq = torch.FloatTensor([self.probs_seq1, self.probs_seq2]).log()
+        decoder = ctcdecode.CTCBeamDecoder(self.vocab_list, beam_width=self.beam_size,
+                                           blank_id=self.vocab_list.index('_'), log_probs_input=True,
+                                           num_processes=24)
         beam_results, beam_scores, timesteps, out_seq_len = decoder.decode(probs_seq)
         output_str1 = self.convert_to_string(beam_results[0][0], self.vocab_list, out_seq_len[0][0])
         output_str2 = self.convert_to_string(beam_results[1][0], self.vocab_list, out_seq_len[1][0])

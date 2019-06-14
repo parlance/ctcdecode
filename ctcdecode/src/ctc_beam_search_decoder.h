@@ -34,7 +34,8 @@ std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
     double cutoff_prob = 1.0,
     size_t cutoff_top_n = 40,
     size_t blank_id = 0,
-    const std::string &space_symbol = DEFAULT_SPACE_SYMBOL,	 
+    const std::string &space_symbol = DEFAULT_SPACE_SYMBOL,
+    int log_input = 0,
     Scorer *ext_scorer = nullptr);
 
 /* CTC Beam Search Decoder for batch data
@@ -65,6 +66,7 @@ ctc_beam_search_decoder_batch(
     size_t cutoff_top_n = 40,
     size_t blank_id = 0,
     const std::string &space_symbol = DEFAULT_SPACE_SYMBOL,
+    int log_input = 0,
     Scorer *ext_scorer = nullptr);
 
 #endif  // CTC_BEAM_SEARCH_DECODER_H_

@@ -22,6 +22,7 @@ std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
     size_t cutoff_top_n,
     size_t blank_id,
     const std::string &space_symbol,
+    int log_input,
     Scorer *ext_scorer) {
   // dimension check
   size_t num_time_steps = probs_seq.size();
@@ -69,13 +70,14 @@ std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
       size_t num_prefixes = std::min(prefixes.size(), beam_size);
       std::sort(
           prefixes.begin(), prefixes.begin() + num_prefixes, prefix_compare);
+      float blank_prob = log_input ? prob[blank_id] : std::log(prob[blank_id]);
       min_cutoff = prefixes[num_prefixes - 1]->score +
-                   std::log(prob[blank_id]) - std::max(0.0, ext_scorer->beta);
+                   blank_prob - std::max(0.0, ext_scorer->beta);
       full_beam = (num_prefixes == beam_size);
     }
 
     std::vector<std::pair<size_t, float>> log_prob_idx =
-        get_pruned_log_probs(prob, cutoff_prob, cutoff_top_n);
+        get_pruned_log_probs(prob, cutoff_prob, cutoff_top_n, log_input);
     // loop over chars
     for (size_t index = 0; index < log_prob_idx.size(); index++) {
       auto c = log_prob_idx[index].first;
@@ -98,7 +100,7 @@ std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
               prefix->log_prob_nb_cur, log_prob_c + prefix->log_prob_nb_prev);
         }
         // get new prefix
-        auto prefix_new = prefix->get_path_trie(c, time_step);
+        auto prefix_new = prefix->get_path_trie(c, time_step, log_prob_c);
 
         if (prefix_new != nullptr) {
           float log_p = -NUM_FLT_INF;
@@ -200,6 +202,7 @@ ctc_beam_search_decoder_batch(
     size_t cutoff_top_n,
     size_t blank_id,
     const std::string &space_symbol,
+    int log_input,
     Scorer *ext_scorer) {
   VALID_CHECK_GT(num_processes, 0, "num_processes must be nonnegative!");
   // thread pool
@@ -217,7 +220,8 @@ ctc_beam_search_decoder_batch(
                                   cutoff_prob,
                                   cutoff_top_n,
                                   blank_id,
-				  space_symbol,
+				                  space_symbol,
+                                  log_input,
                                   ext_scorer));
   }
 
