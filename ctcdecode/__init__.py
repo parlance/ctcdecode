@@ -41,8 +41,8 @@ class CTCBeamDecoder(object):
                                              self._log_probs, self._scorer, output, timesteps, scores, out_seq_len)
         else:
             ctc_decode.paddle_beam_decode(probs, seq_lens, self._labels, self._num_labels, self._beam_width, self._num_processes,
-                                          self._cutoff_prob, self.cutoff_top_n, self._blank_id,self._log_probs, self._space_symbol.encode(), output, timesteps,
-                                          scores, out_seq_len)
+                                          self._cutoff_prob, self.cutoff_top_n, self._blank_id,  self._space_symbol.encode(), self._log_probs,
+                                          output, timesteps, scores, out_seq_len)
 
         return output, scores, timesteps, out_seq_len
 
