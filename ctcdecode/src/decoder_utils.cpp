@@ -19,7 +19,7 @@ std::vector<std::pair<size_t, float>> get_pruned_log_probs(
   if (log_cutoff_prob < 0.0 || cutoff_top_n < cutoff_len) {
     std::sort(
         prob_idx.begin(), prob_idx.end(), pair_comp_second_rev<int, double>);
-    if (cutoff_prob < 0.0) {
+    if (log_cutoff_prob < 0.0) {
       double cum_prob = 0.0;
       cutoff_len = 0;
       for (size_t i = 0; i < prob_idx.size(); ++i) {
@@ -27,6 +27,8 @@ std::vector<std::pair<size_t, float>> get_pruned_log_probs(
         cutoff_len += 1;
         if (cum_prob >= cutoff_prob || cutoff_len >= cutoff_top_n) break;
       }
+    }else{
+      cutoff_len = cutoff_top_n;
     }
     prob_idx = std::vector<std::pair<int, double>>(
         prob_idx.begin(), prob_idx.begin() + cutoff_len);
