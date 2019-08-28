@@ -53,3 +53,7 @@ class CTCBeamDecoder(object):
     def reset_params(self, alpha, beta):
         if self._scorer is not None:
             ctc_decode.reset_params(self._scorer, alpha, beta)
+
+    def __del__(self):
+        if self._scorer is not None:
+            ctc_decode.paddle_release_scorer(self._scorer)

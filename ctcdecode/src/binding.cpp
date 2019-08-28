@@ -142,6 +142,10 @@ void* paddle_get_scorer(double alpha,
     return static_cast<void*>(scorer);
 }
 
+void paddle_release_scorer(void* scorer) {
+    delete static_cast<Scorer*>(scorer);
+}
+
 int is_character_based(void *scorer){
     Scorer *ext_scorer  = static_cast<Scorer *>(scorer);
     return ext_scorer->is_character_based();
@@ -165,6 +169,7 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
   m.def("paddle_beam_decode", &paddle_beam_decode, "paddle_beam_decode");
   m.def("paddle_beam_decode_lm", &paddle_beam_decode_lm, "paddle_beam_decode_lm");
   m.def("paddle_get_scorer", &paddle_get_scorer, "paddle_get_scorer");
+  m.def("paddle_release_scorer", &paddle_release_scorer, "paddle_release_scorer");
   m.def("is_character_based", &is_character_based, "is_character_based");
   m.def("get_max_order", &get_max_order, "get_max_order");
   m.def("get_dict_size", &get_dict_size, "get_max_order");
