@@ -7,6 +7,7 @@ int paddle_beam_decode(THFloatTensor *th_probs,
                        double cutoff_prob,
                        size_t cutoff_top_n,
                        size_t blank_id,
+		               const char* space_symbol,
                        int log_input,
                        THIntTensor *th_output,
                        THIntTensor *th_timesteps,
@@ -22,7 +23,8 @@ int paddle_beam_decode_lm(THFloatTensor *th_probs,
                           double cutoff_prob,
                           size_t cutoff_top_n,
                           size_t blank_id,
-                          bool log_input,
+			              const char* space_symbol,
+			              bool log_input,
                           int *scorer,
                           THIntTensor *th_output,
                           THIntTensor *th_timesteps,
@@ -33,7 +35,8 @@ void* paddle_get_scorer(double alpha,
                         double beta,
                         const char* lm_path,
                         const char* labels,
-                        int vocab_size);
+                        int vocab_size, 
+			const char* space_symbol);
 
 void paddle_release_scorer(void* scorer);
 

@@ -4,7 +4,9 @@ import torch
 
 class CTCBeamDecoder(object):
     def __init__(self, labels, model_path=None, alpha=0, beta=0, cutoff_top_n=40, cutoff_prob=1.0, beam_width=100,
-                 num_processes=4, blank_id=0, log_probs_input=False):
+                 num_processes=4, blank_id=0, log_probs_input=False,
+                 space_symbol=" "):
+
         self.cutoff_top_n = cutoff_top_n
         self._beam_width = beam_width
         self._scorer = None
@@ -12,10 +14,12 @@ class CTCBeamDecoder(object):
         self._labels = ''.join(labels).encode()
         self._num_labels = len(labels)
         self._blank_id = blank_id
+        self._space_symbol = space_symbol
         self._log_probs = 1 if log_probs_input else 0
+
         if model_path:
             self._scorer = ctc_decode.paddle_get_scorer(alpha, beta, model_path.encode(), self._labels,
-                                                        self._num_labels)
+                                                        self._num_labels, self._space_symbol.encode())
         self._cutoff_prob = cutoff_prob
 
     def decode(self, probs, seq_lens=None):
@@ -33,10 +37,11 @@ class CTCBeamDecoder(object):
         if self._scorer:
             ctc_decode.paddle_beam_decode_lm(probs, seq_lens, self._labels, self._num_labels, self._beam_width,
                                              self._num_processes, self._cutoff_prob, self.cutoff_top_n, self._blank_id,
-                                             self._log_probs ,self._scorer, output, timesteps, scores, out_seq_len)
+                                             self._space_symbol.encode(),
+                                             self._log_probs, self._scorer, output, timesteps, scores, out_seq_len)
         else:
             ctc_decode.paddle_beam_decode(probs, seq_lens, self._labels, self._num_labels, self._beam_width, self._num_processes,
-                                          self._cutoff_prob, self.cutoff_top_n, self._blank_id, self._log_probs,
+                                          self._cutoff_prob, self.cutoff_top_n, self._blank_id,  self._space_symbol.encode(), self._log_probs,
                                           output, timesteps, scores, out_seq_len)
 
         return output, scores, timesteps, out_seq_len

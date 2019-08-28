@@ -25,6 +25,8 @@
  *     in desending order.
 */
 
+const std::string DEFAULT_SPACE_SYMBOL =  std::string(" ");
+
 std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
     const std::vector<std::vector<double>> &probs_seq,
     const std::vector<std::string> &vocabulary,
@@ -32,6 +34,7 @@ std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
     double cutoff_prob = 1.0,
     size_t cutoff_top_n = 40,
     size_t blank_id = 0,
+    const std::string &space_symbol = DEFAULT_SPACE_SYMBOL,
     int log_input = 0,
     Scorer *ext_scorer = nullptr);
 
@@ -45,6 +48,7 @@ std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
  *     num_processes: Number of threads for beam search.
  *     cutoff_prob: Cutoff probability for pruning.
  *     cutoff_top_n: Cutoff number for pruning.
+ *     space_symbol: The symbol used to indicate spaces, default is " ".
  *     ext_scorer: External scorer to evaluate a prefix, which consists of
  *                 n-gram language model scoring and word insertion term.
  *                 Default null, decoding the input sample without scorer.
@@ -61,6 +65,7 @@ ctc_beam_search_decoder_batch(
     double cutoff_prob = 1.0,
     size_t cutoff_top_n = 40,
     size_t blank_id = 0,
+    const std::string &space_symbol = DEFAULT_SPACE_SYMBOL,
     int log_input = 0,
     Scorer *ext_scorer = nullptr);
 
