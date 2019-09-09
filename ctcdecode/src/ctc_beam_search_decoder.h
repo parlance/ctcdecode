@@ -5,7 +5,6 @@
 #include <utility>
 #include <vector>
 
-#include "decoderstate.h"
 #include "scorer.h"
 #include "output.h"
 
@@ -65,49 +64,57 @@ ctc_beam_search_decoder_batch(
     int log_input = 0,
     Scorer *ext_scorer = nullptr);
 
-/* Initialize CTC beam search decoder for streaming
+class DecoderState
+{
+  int abs_time_step;
+  int space_id;
+  size_t beam_size;
+  double cutoff_prob;
+  size_t cutoff_top_n;
+  size_t blank_id;
+  int log_input;
+  std::vector<std::string> vocabulary;
+  Scorer *ext_scorer;
 
- * Parameters:
- *     vocabulary: A vector of vocabulary.
- *     beam_size: The width of beam search.
- *     cutoff_prob: Cutoff probability for pruning.
- *     cutoff_top_n: Cutoff number for pruning.
- *     ext_scorer: External scorer to evaluate a prefix, which consists of
- *                 n-gram language model scoring and word insertion term.
- *                 Default null, decoding the input sample without scorer.
- * Return:
- *     A struct containing prefixes and state variables.
-*/
-DecoderState*
-ctc_beam_search_decoder_stream_init(const std::vector<std::string> &vocabulary,
-                                    size_t beam_size,
-                                    double cutoff_prob = 1.0,
-                                    size_t cutoff_top_n = 40,
-                                    size_t blank_id = 0,
-                                    int log_input = 0,
-                                    Scorer *ext_scorer = nullptr);
+  std::vector<PathTrie*> prefixes;
+  PathTrie root;
 
-/* Process logits in decoder stream
+public:
+  /* Initialize CTC beam search decoder for streaming
+   *
+   * Parameters:
+   *     vocabulary: A vector of vocabulary.
+   *     beam_size: The width of beam search.
+   *     cutoff_prob: Cutoff probability for pruning.
+   *     cutoff_top_n: Cutoff number for pruning.
+   *     ext_scorer: External scorer to evaluate a prefix, which consists of
+   *                 n-gram language model scoring and word insertion term.
+   *                 Default null, decoding the input sample without scorer.
+  */
+  DecoderState(const std::vector<std::string> &vocabulary,
+               size_t beam_size,
+               double cutoff_prob,
+               size_t cutoff_top_n,
+               size_t blank_id,
+               int log_input,
+               Scorer *ext_scorer);
+  ~DecoderState() = default;
 
- * Parameters:
- *     state: The state structure previously obtained from decoder_init().
- *     probs: 2-D vector where each element is a vector of probabilities
- *               over alphabet of one time step.
-*/
-void
-ctc_beam_search_decoder_stream_next(DecoderState *state,
-                                    const std::vector<std::vector<double>> &probs_seq);
+  /* Process logits in decoder stream
+   *
+   * Parameters:
+   *     probs: 2-D vector where each element is a vector of probabilities
+   *               over alphabet of one time step.
+  */
+  void next(const std::vector<std::vector<double>> &probs_seq);
 
-/* Get current transcription from the decoder stream state
-
- * Parameters:
- *     state: The state structure previously obtained from decoder_init().
- *
- * Return:
- *     A vector where each element is a pair of score and decoding result,
- *     in descending order.
-*/
-std::vector<std::pair<double, Output>>
-ctc_beam_search_decoder_stream_decode(DecoderState *state);
+  /* Get current transcription from the decoder stream state
+   *
+   * Return:
+   *     A vector where each element is a pair of score and decoding result,
+   *     in descending order.
+  */
+  std::vector<std::pair<double, Output>> decode() const;
+};
 
 #endif  // CTC_BEAM_SEARCH_DECODER_H_
