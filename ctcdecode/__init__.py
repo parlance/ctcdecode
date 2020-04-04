@@ -1,5 +1,5 @@
-from ._ext import ctc_decode
 import torch
+from ._ext import ctc_decode
 
 
 class CTCBeamDecoder(object):
