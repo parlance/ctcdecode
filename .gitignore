@@ -2,7 +2,7 @@ build
 _ext
 ctc_decode
 *.pyc
-
+.idea
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
