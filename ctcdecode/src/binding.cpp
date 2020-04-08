@@ -3,28 +3,38 @@
 #include <string>
 #include <vector>
 #include <torch/torch.h>
+#include <memory>
 #include "scorer.h"
 #include "ctc_beam_search_decoder.h"
 #include "utf8.h"
+#include "boost/shared_ptr.hpp"
+#include "boost/python.hpp"
+#include "boost/python/stl_iterator.hpp"
 
-int utf8_to_utf8_char_vec(const char* labels, std::vector<std::string>& new_vocab) {
-    const char* str_i = labels;
-    const char* end = str_i + strlen(labels)+1;
-    do {
-        char u[5] = {0,0,0,0,0};
-        uint32_t code = utf8::next(str_i, end);
-        if (code == 0) {
-            continue;
-        }
-        utf8::append(code, u);
-        new_vocab.push_back(std::string(u));
+using namespace std;
+
+template<typename T>
+inline
+std::vector< T > py_list_to_std_vector( const boost::python::object& iterable )
+{
+    return std::vector< T >( boost::python::stl_input_iterator< T >( iterable ),
+                             boost::python::stl_input_iterator< T >( ) );
+}
+
+template <class T>
+inline
+boost::python::list std_vector_to_py_list(std::vector<T> vector) {
+    typename std::vector<T>::iterator iter;
+    boost::python::list list;
+    for (iter = vector.begin(); iter != vector.end(); ++iter) {
+        list.append(*iter);
     }
-    while (str_i < end);
+    return list;
 }
 
 int beam_decode(at::Tensor th_probs,
                 at::Tensor th_seq_lens,
-                const char* labels,
+                std::vector<std::string> new_vocab,
                 int vocab_size,
                 size_t beam_size,
                 size_t num_processes,
@@ -38,8 +48,6 @@ int beam_decode(at::Tensor th_probs,
                 at::Tensor th_scores,
                 at::Tensor th_out_length)
 {
-    std::vector<std::string> new_vocab;
-    utf8_to_utf8_char_vec(labels, new_vocab);
     Scorer *ext_scorer = NULL;
     if (scorer != NULL) {
         ext_scorer = static_cast<Scorer *>(scorer);
@@ -67,7 +75,7 @@ int beam_decode(at::Tensor th_probs,
 
     std::vector<std::vector<std::pair<double, Output>>> batch_results =
     ctc_beam_search_decoder_batch(inputs, new_vocab, beam_size, num_processes, cutoff_prob, cutoff_top_n, blank_id, log_input, ext_scorer);
-    auto outputs_accessor =  th_output.accessor<int, 3>();
+    auto outputs_accessor = th_output.accessor<int, 3>();
     auto timesteps_accessor =  th_timesteps.accessor<int, 3>();
     auto scores_accessor =  th_scores.accessor<float, 2>();
     auto out_length_accessor =  th_out_length.accessor<int, 2>();
@@ -93,7 +101,7 @@ int beam_decode(at::Tensor th_probs,
 
 int paddle_beam_decode(at::Tensor th_probs,
                        at::Tensor th_seq_lens,
-                       const char* labels,
+                       std::vector<std::string> labels,
                        int vocab_size,
                        size_t beam_size,
                        size_t num_processes,
@@ -112,7 +120,7 @@ int paddle_beam_decode(at::Tensor th_probs,
 
 int paddle_beam_decode_lm(at::Tensor th_probs,
                           at::Tensor th_seq_lens,
-                          const char* labels,
+                          std::vector<std::string> labels,
                           int vocab_size,
                           size_t beam_size,
                           size_t num_processes,
@@ -134,10 +142,8 @@ int paddle_beam_decode_lm(at::Tensor th_probs,
 void* paddle_get_scorer(double alpha,
                         double beta,
                         const char* lm_path,
-                        const char* labels,
+                        vector<std::string> new_vocab,
                         int vocab_size) {
-    std::vector<std::string> new_vocab;
-    utf8_to_utf8_char_vec(labels, new_vocab);
     Scorer* scorer = new Scorer(alpha, beta, lm_path, new_vocab);
     return static_cast<void*>(scorer);
 }

@@ -1,6 +1,6 @@
 int paddle_beam_decode(THFloatTensor *th_probs,
                        THIntTensor *th_seq_lens,
-                       const char* labels,
+                       std::vector<std::string> labels,
                        int vocab_size,
                        size_t beam_size,
                        size_t num_processes,
@@ -13,9 +13,10 @@ int paddle_beam_decode(THFloatTensor *th_probs,
                        THFloatTensor *th_scores,
                        THIntTensor *th_out_length);
 
+
 int paddle_beam_decode_lm(THFloatTensor *th_probs,
                           THIntTensor *th_seq_lens,
-                          const char* labels,
+                          std::vector<std::string> labels,
                           int vocab_size,
                           size_t beam_size,
                           size_t num_processes,
@@ -32,7 +33,7 @@ int paddle_beam_decode_lm(THFloatTensor *th_probs,
 void* paddle_get_scorer(double alpha,
                         double beta,
                         const char* lm_path,
-                        const char* labels,
+                        std::vector<std::string> labels,
                         int vocab_size);
 
 void paddle_release_scorer(void* scorer);
