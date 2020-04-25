@@ -1,7 +1,10 @@
 #ifndef DECODER_UTILS_H_
 #define DECODER_UTILS_H_
 
+#include <unordered_map>
 #include <utility>
+#include <vector>
+
 #include "fst/log.h"
 #include "path_trie.h"
 #include "output.h"
@@ -62,8 +65,11 @@ std::vector<std::pair<double, Output>> get_beam_search_result(
     const std::vector<PathTrie *> &prefixes,
     size_t beam_size);
 
-// Functor for prefix comparsion
+// Functor for prefix comparison
 bool prefix_compare(const PathTrie *x, const PathTrie *y);
+
+bool prefix_compare_external_scores(const PathTrie *x, const PathTrie *y,
+                                    const std::unordered_map<const PathTrie*, float>& scores);
 
 /* Get length of utf8 encoding string
  * See: http://stackoverflow.com/a/4063229
