@@ -5,15 +5,14 @@ import os
 import tarfile
 import warnings
 
-import wget
-import setuptools
+import urllib.request
 from torch.utils.cpp_extension import CppExtension, include_paths
 
 
 def download_extract(url, dl_path):
     if not os.path.isfile(dl_path):
         # Already downloaded
-        wget.download(url, out=dl_path)
+        urllib.request.urlretrieve(url, dl_path)
     if dl_path.endswith(".tar.gz") and os.path.isdir(dl_path[:-len(".tar.gz")]):
         # Already extracted
         return
