@@ -40,7 +40,7 @@ def compile_test(header, library):
     return os.system(command) == 0
 
 
-compile_args = ['-O3', '-DKENLM_MAX_ORDER=6', '-std=c++11', '-fPIC']
+compile_args = ['-O3', '-DKENLM_MAX_ORDER=6', '-std=c++14', '-fPIC']
 ext_libs = []
 if compile_test('zlib.h', 'z'):
     compile_args.append('-DHAVE_ZLIB')
