@@ -51,7 +51,7 @@ beam_results, beam_scores, timesteps, out_lens = decoder.decode(output)
   This is an important parameter that represents a tradeoff you need to make based on your dataset and needs.
  - `num_processes` Parallelize the batch using num_processes workers. You probably want to pass the number of cpus your computer has. You can find this in python with `import multiprocessing` then `n_cpus = multiprocessing.cpu_count()`. Default 4.
  - `blank_id` This should be the index of the blank token (probably 0) used when training your model so that ctcdecode can remove it during decoding. 
- - `log_probs_input` If your outputs have passed through a softmax and represent probabilities, this should be false, if they passed through a LogSoftmax and represent negative log likelihood, you need to pass True. If you don't understand this, run `print(output[0][0].sum())`, if it's a negative number you've probably got NLL and need to pass True, if it sums to ~1.0 you should pass False. Default True.
+ - `log_probs_input` If your outputs have passed through a softmax and represent probabilities, this should be false, if they passed through a LogSoftmax and represent negative log likelihood, you need to pass True. If you don't understand this, run `print(output[0][0].sum())`, if it's a negative number you've probably got NLL and need to pass True, if it sums to ~1.0 you should pass False. Default False.
 
 ### Inputs to the `decode` method
  - `output` should be the output activations from your model. If your output has passed through a SoftMax layer, you shouldn't need to alter it (except maybe to transpose), but if your `output` represents negative log likelihoods (raw logits), you either need to pass it through an additional `torch.nn.functional.softmax` or you can pass `log_probs_input=False` to the decoder. Your output should be BATCHSIZE x N_TIMESTEPS x N_LABELS so you may need to transpose it before passing it to the decoder. Note that if you pass things in the wrong order, the beam search will probably still run, you'll just get back nonsense results. 
@@ -77,6 +77,7 @@ for i in range(50):
 
 Note, these will be a list of ints that need decoding. You likely already have a function to decode from int to text, but if not you can do something like.
 `"".join[labels[n] for n in beam_results[0][0][:out_len[0][0]]]` using the labels you passed in to `CTCBeamDecoder`
+
 
 ## Resources
 
