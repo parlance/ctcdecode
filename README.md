@@ -50,7 +50,7 @@ beam_results, beam_scores, timesteps, out_lens = decoder.decode(output)
  will make your beam search exponentially slower. Furthermore, the longer your outputs, the more time large beams will take.
   This is an important parameter that represents a tradeoff you need to make based on your dataset and needs.
  - `num_processes` Parallelize the batch using num_processes workers. You probably want to pass the number of cpus your computer has. You can find this in python with `import multiprocessing` then `n_cpus = multiprocessing.cpu_count()`. Default 4.
- - `blank_id` This should be the index of the blank token (probably 0) used when training your model so that ctcdecode can remove it during decoding. 
+ - `blank_id` This should be the index of the CTC blank token (probably 0). 
  - `log_probs_input` If your outputs have passed through a softmax and represent probabilities, this should be false, if they passed through a LogSoftmax and represent negative log likelihood, you need to pass True. If you don't understand this, run `print(output[0][0].sum())`, if it's a negative number you've probably got NLL and need to pass True, if it sums to ~1.0 you should pass False. Default False.
 
 ### Inputs to the `decode` method
@@ -60,7 +60,7 @@ beam_results, beam_scores, timesteps, out_lens = decoder.decode(output)
 
 4 things get returned from `decode`
  1. `beam_results` - Shape: BATCHSIZE x N_BEAMS X N_TIMESTEPS A batch containing the series of characters (these are ints, you still need to decode them back to your text) representing results from a given beam search. Note that the beams are almost always shorter than the total number of timesteps, and the additional data is non-sensical, so to see the top beam (as int labels) from the first item in the batch, you need to run `beam_results[0][0][:out_len[0][0]]`.
- 1. `beam_scores` - Shape: BATCHSIZE x N_BEAMS x N_TIMESTEPS A batch with the likelihood of each beam (I think this is p=1/e\**beam_score). If this is true, you can get the model's confidence that that beam is correct with `p=1/np.exp(beam_score)` **more info needed**
+ 1. `beam_scores` - Shape: BATCHSIZE x N_BEAMS x N_TIMESTEPS A batch with the approximate CTC score of each beam (look at the code [here](https://github.com/parlance/ctcdecode/blob/master/ctcdecode/src/ctc_beam_search_decoder.cpp#L191-L192) for more info). If this is true, you can get the model's confidence that the beam is correct with `p=1/np.exp(beam_score)`.
  1. `timesteps` - Shape: BATCHSIZE x N_BEAMS The timestep at which the nth output character has peak probability. Can be used as alignment between the audio and the transcript.
  1. `out_lens` - Shape: BATCHSIZE x N_BEAMS. `out_lens[i][j]` is the length of the jth beam_result, of item i of your batch. 
 
