@@ -4,21 +4,24 @@ from ._ext import ctc_decode
 
 class CTCBeamDecoder(object):
     """
-    Pytorch wrapper for DeepSpeech PaddlePaddle Beam Search Decoder
-
+    PyTorch wrapper for DeepSpeech PaddlePaddle Beam Search Decoder.
     Args:
-        labels (list): The tokens/vocab used to train your model. They should be in the same order as they are in your model's outputs.
+        labels (list): The tokens/vocab used to train your model.
+                        They should be in the same order as they are in your model's outputs.
         model_path (basestring): The path to your external KenLM language model(LM)
-        alpha (float): Weighting associated with the LMs probabilities. A weight of 0 means the LM has no effect.
+        alpha (float): Weighting associated with the LMs probabilities.
+                        A weight of 0 means the LM has no effect.
         beta (float):  Weight associated with the number of words within our beam.
-        cutoff_top_n (int): Cutoff number in pruning. Only the top cutoff_top_n characters with the highest probability in the vocab will be used in beam search.
+        cutoff_top_n (int): Cutoff number in pruning. Only the top cutoff_top_n characters
+                            with the highest probability in the vocab will be used in beam search.
         cutoff_prob (float): Cutoff probability in pruning. 1.0 means no pruning.
-        beam_width (int): This controls how broad the beam search is. Higher values are more likely to find top beams, but they also
-        will make your beam search exponentially slower.
+        beam_width (int): This controls how broad the beam search is. Higher values are more likely to find top beams,
+                            but they also will make your beam search exponentially slower.
         num_processes (int): Parallelize the batch using num_processes workers. 
-        blank_id (int): Index of the blank token (probably 0) used when training your model so that ctcdecode can remove it during decoding.
-        log_probs_input (bool): Pass False if your model has passed through a softmax and output probabilities sum to 1. Pass True otherwise.
+        blank_id (int): Index of the CTC blank token (probably 0) used when training your model.
+        log_probs_input (bool): False if your model has passed through a softmax and output probabilities sum to 1.
     """
+
     def __init__(self, labels, model_path=None, alpha=0, beta=0, cutoff_top_n=40, cutoff_prob=1.0, beam_width=100,
                  num_processes=4, blank_id=0, log_probs_input=False):
         self.cutoff_top_n = cutoff_top_n
@@ -36,19 +39,26 @@ class CTCBeamDecoder(object):
 
     def decode(self, probs, seq_lens=None):
         """
-        Conduct the beamsearch on model outputs and return results
-
+        Conducts the beamsearch on model outputs and return results.
         Args:
         probs (Tensor) - A rank 3 tensor representing model outputs. Shape is batch x num_timesteps x num_labels.
-        seq_lens (Tensor) - A rank 1 tensor representing the sequence length of the items in the batch. Optional, if not provided the size of axis 1 (num_timesteps) of `probs` is used for all items
+        seq_lens (Tensor) - A rank 1 tensor representing the sequence length of the items in the batch. Optional,
+        if not provided the size of axis 1 (num_timesteps) of `probs` is used for all items
 
         Returns:
         tuple: (beam_results, beam_scores, timesteps, out_lens)
 
-        beam_results (Tensor): A rank 3 tensor representing the top n beams of a batch of items. Shape: batchsize x num_beams x num_timeteps. Results are still encoded as ints at this stage.
-        beam_scores (Tensor): A rank 3 tensor representing the likelihood of each beam in beam_results. Shape: batchsize x num_beams x num_timeteps
-        timesteps (Tensor): A rank 2 tensor representing the timesteps at which the nth output character has peak probability. To be used as alignment between audio and transcript. Shape: batchsize x num_beams
-        out_lens (Tensor): A rank 2 tensor representing the length of each beam in beam_results. Shape: batchsize x n_beams.
+        beam_results (Tensor): A 3-dim tensor representing the top n beams of a batch of items.
+                                Shape: batchsize x num_beams x num_timesteps.
+                                Results are still encoded as ints at this stage.
+        beam_scores (Tensor): A 3-dim tensor representing the likelihood of each beam in beam_results.
+                                Shape: batchsize x num_beams x num_timesteps
+        timesteps (Tensor): A 2-dim tensor representing the timesteps at which the nth output character
+                                has peak probability.
+                                To be used as alignment between audio and transcript.
+                                Shape: batchsize x num_beams
+        out_lens (Tensor): A 2-dim tensor representing the length of each beam in beam_results.
+                                Shape: batchsize x n_beams.
 
         """
         probs = probs.cpu().float()
