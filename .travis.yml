@@ -21,16 +21,16 @@ env:
     - secure: WiCn/Ao0aOyHqoTv0LIcuqcMLTS+CokHvQig1wlx0D7u1eSzjQzGA8ubXKG+1dZs5KN11SfBOE/2hwlAtQGZes7C3Jray3HF9DJnX/PnPlzwHxitsOXc+rT4WWz+6wJDoiBua1eSI10duD5sb4XfPfdD5uGdoZzR17Nm9gN9xl5VLKYNNqYSVky+RKeHnLI9dhsQZJ5gMDZY0C2eAcL+U4COSQh3Ah50wVdiwW8UXyd1jy3+qs+jCEq7nitSNftqkklrWKIBHDVfkZztc/9PTrhihVspaUjm4z6YAlP6ovA2p648YI99kKjv2/Hff8VTlBNVSf4pDZUTzlVsdeM/J+Q5FBHRVkXPPIkWWdFcWM1iR5UDBohtbyicgC/77ugcMV9ztBJVU5+Ib1Xi2pf8GCDPrO3tXg+1Kan3HeNtIDICY5VHZjnOOub0faE08U7pzU64OmXEJMGvrYr6AtwD+P0unqcdtmWnX4EKNzcgbs23OTN8jV2VfB6yGmidjj4z8s8Yo4gJUiWjw4VKUGlYPxrhj/7lRyT5E+bQeO461XbXyMvPtqTYYB4AQ84z6cNwP/DhR06OZ0dnjaJrLIfDuRPRtHTO3uYgsL6Olxkna29Di/KpyMMq7MzhdB00WbRIooL2t979dbL8Sa+tw48kPN27ASOY2DDj97JsqDI5nUk=
 
 install:
-  - python3 -m pip install --upgrade cibuildwheel
-  - python3 -m pip install -r requirements.txt
-  - python3 -m pip install .
+  - python -m pip install --upgrade cibuildwheel
+  - python -m pip install -r requirements.txt
+  - python -m pip install .
 script:
-  - python3 -m pytest tests/
-  - python3 -m cibuildwheel --output-dir wheelhouse
+  - python -m pytest tests/
+  - python -m cibuildwheel --output-dir wheelhouse
 
 after_success:
   - |
     if [[ $TRAVIS_TAG ]]; then
-      python3 -m pip install twine
-      python3 -m twine upload wheelhouse/*.whl
+      python -m pip install twine
+      python -m twine upload wheelhouse/*.whl
     fi
