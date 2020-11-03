@@ -60,7 +60,7 @@ beam_results, beam_scores, timesteps, out_lens = decoder.decode(output)
 
 4 things get returned from `decode`
  1. `beam_results` - Shape: BATCHSIZE x N_BEAMS X N_TIMESTEPS A batch containing the series of characters (these are ints, you still need to decode them back to your text) representing results from a given beam search. Note that the beams are almost always shorter than the total number of timesteps, and the additional data is non-sensical, so to see the top beam (as int labels) from the first item in the batch, you need to run `beam_results[0][0][:out_len[0][0]]`.
- 1. `beam_scores` - Shape: BATCHSIZE x N_BEAMS x N_TIMESTEPS A batch with the approximate CTC score of each beam (look at the code [here](https://github.com/parlance/ctcdecode/blob/master/ctcdecode/src/ctc_beam_search_decoder.cpp#L191-L192) for more info). If this is true, you can get the model's confidence that the beam is correct with `p=1/np.exp(beam_score)`.
+ 1. `beam_scores` - Shape: BATCHSIZE x N_BEAMS A batch with the approximate CTC score of each beam (look at the code [here](https://github.com/parlance/ctcdecode/blob/master/ctcdecode/src/ctc_beam_search_decoder.cpp#L191-L192) for more info). If this is true, you can get the model's confidence that the beam is correct with `p=1/np.exp(beam_score)`.
  1. `timesteps` - Shape: BATCHSIZE x N_BEAMS The timestep at which the nth output character has peak probability. Can be used as alignment between the audio and the transcript.
  1. `out_lens` - Shape: BATCHSIZE x N_BEAMS. `out_lens[i][j]` is the length of the jth beam_result, of item i of your batch. 
 
