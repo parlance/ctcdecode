@@ -150,7 +150,8 @@ void Scorer::set_char_map(const std::vector<std::string>& char_list) {
   char_map_.clear();
 
   for (size_t i = 0; i < char_list_.size(); i++) {
-    if (char_list_[i] == " ") {
+    // sometimes the space is a |
+    if (char_list_[i] == "|" or char_list_[i] == " ") {
       SPACE_ID_ = i;
     }
     // The initial state of FST is state 0, hence the index of chars in
