@@ -14,13 +14,14 @@ beam_decode(
             torch::Tensor probs,
             c10::optional<torch::Tensor> seq_lens_,
             std::vector<std::string> vocabulary,
-            int64_t vocab_size,
             int64_t beam_size,
             int64_t num_processes,
-            double cutoff_prob,
+            c10::optional<double> cutoff_prob_,
             int64_t cutoff_top_n,
             int64_t blank_id,
             bool log_input) {
+  const double cutoff_prob = cutoff_prob_.value_or(1.0);
+
   TORCH_CHECK(probs.ndimension() == 3, "`probs` has to be 3D Tensor.");
   TORCH_CHECK(probs.device().is_cpu(), "`probs` has to be on CPU.");
   TORCH_CHECK(probs.dtype() == torch::kFloat, "`probs` has to be float Tensor.");
