@@ -1,5 +1,29 @@
 import torch
-from ._ext import ctc_decode
+
+def _init_extension():
+    import os
+    import importlib
+    import torch
+
+    # load the custom_op_library and register the custom ops
+    lib_dir = os.path.dirname(__file__)
+    loader_details = (
+        importlib.machinery.ExtensionFileLoader,
+        importlib.machinery.EXTENSION_SUFFIXES
+    )
+
+    extfinder = importlib.machinery.FileFinder(lib_dir, loader_details)
+    ext_specs = extfinder.find_spec("_ctc_decode")
+    if ext_specs is None:
+        raise ImportError("ctc_decode C++ Extension is not found.")
+    torch.ops.load_library(ext_specs.origin)
+    torch.classes.load_library(ext_specs.origin)
+
+
+_init_extension()
+
+
+del _init_extension
 
 
 class CTCBeamDecoder(object):
@@ -67,7 +91,7 @@ class CTCBeamDecoder(object):
         timesteps = torch.IntTensor(batch_size, self._beam_width, max_seq_len).cpu().int()
         scores = torch.FloatTensor(batch_size, self._beam_width).cpu().float()
         out_seq_len = torch.zeros(batch_size, self._beam_width).cpu().int()
-        ctc_decode.paddle_beam_decode(
+        torch.ops.ctcdecode.paddle_beam_decode(
             probs, seq_lens, self._labels, self._num_labels, self._beam_width,
             self._num_processes, self._cutoff_prob, self.cutoff_top_n,
             self._blank_id, self._log_probs, output, timesteps, scores, out_seq_len)

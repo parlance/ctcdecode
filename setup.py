@@ -42,6 +42,7 @@ def compile_test(header, library):
 
 compile_args = ['-O3', '-DKENLM_MAX_ORDER=6', '-std=c++14', '-fPIC']
 ext_libs = []
+
 if compile_test('zlib.h', 'z'):
     compile_args.append('-DHAVE_ZLIB')
     ext_libs.append('z')
@@ -64,7 +65,7 @@ third_party_includes = [os.path.realpath(os.path.join("third_party", lib)) for l
 ctc_sources = glob.glob('ctcdecode/src/*.cpp')
 
 extension = CppExtension(
-    name='ctcdecode._ext.ctc_decode',
+    name='ctcdecode._ctc_decode',
     package=True,
     with_cuda=False,
     sources=ctc_sources + lib_sources,
@@ -118,5 +119,5 @@ setup(
     # Exclude the build files.
     packages=find_packages(exclude=["build"]),
     ext_modules=[extension],
-    cmdclass={'build_ext': BuildExtension}
+    cmdclass={'build_ext': BuildExtension.with_options(no_python_abi_suffix=True)}
 )

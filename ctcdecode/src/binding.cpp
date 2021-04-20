@@ -1,4 +1,4 @@
-#include <torch/torch.h>
+#include <torch/script.h>
 #include "ctc_beam_search_decoder.h"
 
 
@@ -64,24 +64,24 @@ int beam_decode(at::Tensor th_probs,
     return 1;
 }
 
-int paddle_beam_decode(at::Tensor th_probs,
-                       at::Tensor th_seq_lens,
+int64_t paddle_beam_decode(torch::Tensor th_probs,
+                       torch::Tensor th_seq_lens,
                        std::vector<std::string> labels,
-                       int vocab_size,
-                       size_t beam_size,
-                       size_t num_processes,
+                       int64_t vocab_size,
+                       int64_t beam_size,
+                       int64_t num_processes,
                        double cutoff_prob,
-                       size_t cutoff_top_n,
-                       size_t blank_id,
-                       int log_input,
-                       at::Tensor th_output,
-                       at::Tensor th_timesteps,
-                       at::Tensor th_scores,
-                       at::Tensor th_out_length){
+                       int64_t cutoff_top_n,
+                       int64_t blank_id,
+                       int64_t log_input,
+                       torch::Tensor th_output,
+                       torch::Tensor th_timesteps,
+                       torch::Tensor th_scores,
+                       torch::Tensor th_out_length){
     return beam_decode(th_probs, th_seq_lens, labels, vocab_size, beam_size, num_processes,
                 cutoff_prob, cutoff_top_n, blank_id, log_input, th_output, th_timesteps, th_scores, th_out_length);
 }
 
-PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-  m.def("paddle_beam_decode", &paddle_beam_decode, "paddle_beam_decode");
+TORCH_LIBRARY(ctcdecode, m) {
+  m.def("paddle_beam_decode", &paddle_beam_decode);
 }
