@@ -63,9 +63,11 @@ class CTCBeamDecoder(object):
         Conducts the beamsearch on model outputs and return results.
         Args:
             probs (torch.Tensor):
-                Encoder output. Shape: ``[batch, num_timesteps, num_labels]``.
+                Encoder output.
+                Shape: ``[batch, num_timesteps, num_labels]``.
             seq_lens (torch.Tensor, optional):
-                The sequence length of the items in the batch. Shape: ``[batch]``.
+                The sequence length of the items in the batch.
+                Shape: ``[batch]``.
                 If not provided, the size of axis 1 (``num_timesteps``) of ``probs``
                 is used for all items.
 
@@ -85,12 +87,6 @@ class CTCBeamDecoder(object):
                 the corresponding output character has peak probability.
                 Shape: ``[batch, num_beams, num_timesteps]``.
         """
-        probs = probs.cpu().float()
-        batch_size, max_seq_len = probs.size(0), probs.size(1)
-        if seq_lens is None:
-            seq_lens = torch.full([batch_size], max_seq_len, dtype=torch.int32)
-        else:
-            seq_lens = seq_lens.cpu().int()
         return torch.ops.ctcdecode.beam_decode(
             probs, seq_lens, self._labels, self._num_labels, self._beam_width,
             self._num_processes, self._cutoff_prob, self.cutoff_top_n,
