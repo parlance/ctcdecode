@@ -1,8 +1,7 @@
-#include <torch/script.h>
-#include <ATen/Parallel.h>
+#include <fst/fstlib.h>
+
 #include "ctc_beam_search_decoder.h"
 #include "decoder_utils.h"
-#include "fst/fstlib.h"
 #include "path_trie.h"
 
 namespace ctcdecode {
@@ -43,10 +42,9 @@ DecoderState::next(const std::vector<std::vector<double>> &probs_seq)
   // dimension check
   size_t num_time_steps = probs_seq.size();
   for (size_t i = 0; i < num_time_steps; ++i) {
-    VALID_CHECK_EQ(probs_seq[i].size(),
-                   vocabulary.size(),
-                   "The shape of probs_seq does not match with "
-                   "the shape of the vocabulary");
+    VALID_CHECK_EQ(
+      probs_seq[i].size(), vocabulary.size(),
+      "The shape of probs_seq does not match with the shape of the vocabulary");
   }
 
   // prefix search over time
@@ -75,7 +73,7 @@ DecoderState::next(const std::vector<std::vector<double>> &probs_seq)
           continue;
         }
         // repeated character
-        if (c == prefix->character) {
+        if (static_cast<int>(c) == prefix->character) {
           prefix->log_prob_nb_cur = log_sum_exp(
               prefix->log_prob_nb_cur, log_prob_c + prefix->log_prob_nb_prev);
         }
@@ -85,10 +83,10 @@ DecoderState::next(const std::vector<std::vector<double>> &probs_seq)
         if (prefix_new != nullptr) {
           float log_p = -NUM_FLT_INF;
 
-          if (c == prefix->character &&
+          if (static_cast<int>(c) == prefix->character &&
               prefix->log_prob_b_prev > -NUM_FLT_INF) {
             log_p = log_prob_c + prefix->log_prob_b_prev;
-          } else if (c != prefix->character) {
+          } else if (static_cast<int>(c) != prefix->character) {
             log_p = log_prob_c + prefix->score;
           }
 
@@ -155,37 +153,6 @@ std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
                      log_input);
   state.next(probs_seq);
   return state.decode();
-}
-
-
-std::vector<std::vector<std::pair<double, Output>>>
-ctc_beam_search_decoder_batch(
-    const std::vector<std::vector<std::vector<double>>> &probs_split,
-    const std::vector<std::string> &vocabulary,
-    size_t beam_size,
-    size_t num_processes,
-    double cutoff_prob,
-    size_t cutoff_top_n,
-    size_t blank_id,
-    int log_input)
-{
-  size_t batch_size = probs_split.size();
-  auto grain_size = batch_size / num_processes;
-
-  std::vector<std::vector<std::pair<double, Output>>> results(batch_size);
-
-  at::parallel_for(0, batch_size, grain_size, [&](int64_t begin, int64_t end) {
-    for (auto i = begin; i < end; ++i) {
-      results[i] = ctc_beam_search_decoder(probs_split[i],
-                                          vocabulary,
-                                          beam_size,
-                                          cutoff_prob,
-                                          cutoff_top_n,
-                                          blank_id,
-                                          log_input);
-    }
-  });
-  return results;
 }
 
 } // namespace ctcdecode

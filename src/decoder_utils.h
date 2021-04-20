@@ -6,7 +6,9 @@
 #include <utility>
 #include <unordered_map>
 #include <vector>
-#include <fst/log.h>
+
+#include <fst/fstlib.h>
+
 #include "output.h"
 #include "path_trie.h"
 
@@ -28,10 +30,7 @@ inline void check(
 #define VALID_CHECK(x, info) \
   check(static_cast<bool>(x), #x, __FILE__, __LINE__, info)
 #define VALID_CHECK_EQ(x, y, info) VALID_CHECK((x) == (y), info)
-#define VALID_CHECK_GT(x, y, info) VALID_CHECK((x) > (y), info)
-#define VALID_CHECK_LT(x, y, info) VALID_CHECK((x) < (y), info)
-
-
+ 
 // Function template for comparing two pairs
 template <typename T1, typename T2>
 bool pair_comp_first_rev(const std::pair<T1, T2> &a,

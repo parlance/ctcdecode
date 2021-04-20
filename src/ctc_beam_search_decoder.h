@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <utility>
+
 #include "output.h"
 #include "path_trie.h"
 
@@ -26,31 +27,6 @@ std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
     const std::vector<std::vector<double>> &probs_seq,
     const std::vector<std::string> &vocabulary,
     size_t beam_size,
-    double cutoff_prob = 1.0,
-    size_t cutoff_top_n = 40,
-    size_t blank_id = 0,
-    int log_input = 0);
-
-/* CTC Beam Search Decoder for batch data
-
- * Parameters:
- *     probs_seq: 3-D vector that each element is a 2-D vector that can be used
- *                by ctc_beam_search_decoder().
- *     vocabulary: A vector of vocabulary.
- *     beam_size: The width of beam search.
- *     num_processes: Number of threads for beam search.
- *     cutoff_prob: Cutoff probability for pruning.
- *     cutoff_top_n: Cutoff number for pruning.
- * Return:
- *     A 2-D vector that each element is a vector of beam search decoding
- *     result for one audio sample.
-*/
-std::vector<std::vector<std::pair<double, Output>>>
-ctc_beam_search_decoder_batch(
-    const std::vector<std::vector<std::vector<double>>> &probs_split,
-    const std::vector<std::string> &vocabulary,
-    size_t beam_size,
-    size_t num_processes,
     double cutoff_prob = 1.0,
     size_t cutoff_top_n = 40,
     size_t blank_id = 0,

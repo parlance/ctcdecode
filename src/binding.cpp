@@ -1,12 +1,60 @@
 #include <vector>
 #include <utility>
+
 #include <torch/script.h>
+#include <ATen/Parallel.h>
+
 #include "ctc_beam_search_decoder.h"
 
 namespace ctcdecode {
+namespace {
 
-int beam_decode(at::Tensor th_probs,
-                at::Tensor th_seq_lens,
+/* CTC Beam Search Decoder for batch data
+
+ * Parameters:
+ *     probs_seq: 3-D vector that each element is a 2-D vector that can be used
+ *                by ctc_beam_search_decoder().
+ *     vocabulary: A vector of vocabulary.
+ *     beam_size: The width of beam search.
+ *     num_processes: Number of threads for beam search.
+ *     cutoff_prob: Cutoff probability for pruning.
+ *     cutoff_top_n: Cutoff number for pruning.
+ * Return:
+ *     A 2-D vector that each element is a vector of beam search decoding
+ *     result for one audio sample.
+*/
+std::vector<std::vector<std::pair<double, Output>>>
+ctc_beam_search_decoder_batch(
+    const std::vector<std::vector<std::vector<double>>> &probs_split,
+    const std::vector<std::string> &vocabulary,
+    size_t beam_size,
+    size_t num_processes,
+    double cutoff_prob,
+    size_t cutoff_top_n,
+    size_t blank_id,
+    int log_input)
+{
+  size_t batch_size = probs_split.size();
+  auto grain_size = batch_size / num_processes;
+
+  std::vector<std::vector<std::pair<double, Output>>> results(batch_size);
+
+  at::parallel_for(0, batch_size, grain_size, [&](int64_t begin, int64_t end) {
+    for (auto i = begin; i < end; ++i) {
+      results[i] = ctc_beam_search_decoder(probs_split[i],
+                                          vocabulary,
+                                          beam_size,
+                                          cutoff_prob,
+                                          cutoff_top_n,
+                                          blank_id,
+                                          log_input);
+    }
+  });
+  return results;
+}
+  
+int beam_decode(torch::Tensor th_probs,
+                torch::Tensor th_seq_lens,
                 std::vector<std::string> new_vocab,
                 int vocab_size,
                 size_t beam_size,
@@ -15,10 +63,10 @@ int beam_decode(at::Tensor th_probs,
                 size_t cutoff_top_n,
                 size_t blank_id,
                 bool log_input,
-                at::Tensor th_output,
-                at::Tensor th_timesteps,
-                at::Tensor th_scores,
-                at::Tensor th_out_length)
+                torch::Tensor th_output,
+                torch::Tensor th_timesteps,
+                torch::Tensor th_scores,
+                torch::Tensor th_out_length)
 {
     const int64_t max_time = th_probs.size(1);
     const int64_t batch_size = th_probs.size(0);
@@ -89,4 +137,5 @@ TORCH_LIBRARY(ctcdecode, m) {
   m.def("paddle_beam_decode", &paddle_beam_decode);
 }
 
+} // namespace
 } // namespace ctcdecode
