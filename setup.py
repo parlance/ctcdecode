@@ -1,103 +1,98 @@
-#!/usr/bin/env python
-import glob
-import multiprocessing.pool
+#!/usr/bin/env python3
 import os
-import tarfile
-import urllib.request
-import warnings
+import sys
+import platform
+import subprocess
+from pathlib import Path
+from setuptools import setup, find_packages, Extension
+from setuptools.command.build_ext import build_ext
 
-from setuptools import setup, find_packages, distutils
-from torch.utils.cpp_extension import BuildExtension
-from torch.utils.cpp_extension import CppExtension, include_paths
+import torch
 
-
-def download_extract(url, dl_path):
-    if not os.path.isfile(dl_path):
-        # Already downloaded
-        urllib.request.urlretrieve(url, dl_path)
-    if dl_path.endswith(".tar.gz") and os.path.isdir(dl_path[:-len(".tar.gz")]):
-        # Already extracted
-        return
-    tar = tarfile.open(dl_path)
-    tar.extractall('third_party/')
-    tar.close()
+ROOT_DIR = Path(__file__).parent.resolve()
 
 
-# Download/Extract openfst
-download_extract('https://github.com/parlance/ctcdecode/releases/download/v1.0/openfst-1.6.7.tar.gz',
-                 'third_party/openfst-1.6.7.tar.gz')
-
-
-for file in ['third_party/ThreadPool/ThreadPool.h']:
-    if not os.path.exists(file):
-        warnings.warn('File `{}` does not appear to be present. Did you forget `git submodule update`?'.format(file))
-
-
-compile_args = ['-O3', '-DKENLM_MAX_ORDER=6', '-std=c++14', '-fPIC']
-ext_libs = []
-
-third_party_libs = ["openfst-1.6.7/src/include", "ThreadPool"]
-
-lib_sources = glob.glob('third_party/openfst-1.6.7/src/lib/*.cc')
-lib_sources = [fn for fn in lib_sources if not (fn.endswith('main.cc') or fn.endswith('test.cc'))]
-
-third_party_includes = [os.path.realpath(os.path.join("third_party", lib)) for lib in third_party_libs]
-ctc_sources = glob.glob('ctcdecode/src/*.cpp')
-
-extension = CppExtension(
-    name='ctcdecode._ctc_decode',
-    package=True,
-    with_cuda=False,
-    sources=ctc_sources + lib_sources,
-    include_dirs=third_party_includes + include_paths(),
-    libraries=ext_libs,
-    extra_compile_args=compile_args,
-    language='c++'
-)
-
-
-# monkey-patch for parallel compilation
-# See: https://stackoverflow.com/a/13176803
-def parallelCCompile(self,
-                     sources,
-                     output_dir=None,
-                     macros=None,
-                     include_dirs=None,
-                     debug=0,
-                     extra_preargs=None,
-                     extra_postargs=None,
-                     depends=None):
-    # those lines are copied from distutils.ccompiler.CCompiler directly
-    macros, objects, extra_postargs, pp_opts, build = self._setup_compile(
-        output_dir, macros, include_dirs, sources, depends, extra_postargs)
-    cc_args = self._get_cc_args(pp_opts, debug, extra_preargs)
-
-    # parallel code
-    def _single_compile(obj):
+# Based off of
+# https://github.com/pybind/cmake_example/blob/580c5fd29d4651db99d8874714b07c0c49a53f8a/setup.py
+class CMakeBuild(build_ext):
+    def run(self):
         try:
-            src, ext = build[obj]
-        except KeyError:
-            return
-        self._compile(obj, src, ext, cc_args, extra_postargs, pp_opts)
+            subprocess.check_output(['cmake', '--version'])
+        except OSError:
+            raise RuntimeError("CMake is not available.") from None
+        super().run()
 
-    # convert to list, imap is evaluated on-demand
-    thread_pool = multiprocessing.pool.ThreadPool(os.cpu_count())
-    list(thread_pool.imap(_single_compile, objects))
-    return objects
+    def build_extension(self, ext):
+        extdir = os.path.abspath(
+            os.path.dirname(self.get_ext_fullpath(ext.name)))
+
+        # required for auto-detection of auxiliary "native" libs
+        if not extdir.endswith(os.path.sep):
+            extdir += os.path.sep
+
+        cfg = "Debug" if self.debug else "Release"
+
+        cmake_args = [
+            f"-DCMAKE_BUILD_TYPE={cfg}",
+            f"-DCMAKE_PREFIX_PATH={torch.utils.cmake_prefix_path}",
+            f"-DCMAKE_INSTALL_PREFIX={extdir}",
+            '-DCMAKE_VERBOSE_MAKEFILE=ON',
+        ]
+        build_args = [
+            '--target', 'install'
+        ]
+
+        # Default to Ninja
+        if 'CMAKE_GENERATOR' not in os.environ or platform.system() == 'Windows':
+            cmake_args += ["-GNinja"]
+        if platform.system() == 'Windows':
+            python_version = sys.version_info
+            cmake_args += [
+                "-DCMAKE_C_COMPILER=cl",
+                "-DCMAKE_CXX_COMPILER=cl",
+                f"-DPYTHON_VERSION={python_version.major}.{python_version.minor}",
+            ]
+
+        # Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level
+        # across all generators.
+        if "CMAKE_BUILD_PARALLEL_LEVEL" not in os.environ:
+            # self.parallel is a Python 3 only way to set parallel jobs by hand
+            # using -j in the build_ext call, not supported by pip or PyPA-build.
+            if hasattr(self, "parallel") and self.parallel:
+                # CMake 3.12+ only.
+                build_args += ["-j{}".format(self.parallel)]
+
+        if not os.path.exists(self.build_temp):
+            os.makedirs(self.build_temp)
+
+        subprocess.check_call(
+            ["cmake", str(ROOT_DIR)] + cmake_args, cwd=self.build_temp)
+        subprocess.check_call(
+            ["cmake", "--build", "."] + build_args, cwd=self.build_temp)
+
+    def get_ext_filename(self, fullname):
+        ext_filename = super().get_ext_filename(fullname)
+        ext_filename_parts = ext_filename.split('.')
+        without_abi = ext_filename_parts[:-2] + ext_filename_parts[-1:]
+        ext_filename = '.'.join(without_abi)
+        return ext_filename
 
 
-# hack compile to support parallel compiling
-distutils.ccompiler.CCompiler.compile = parallelCCompile
+def _main():
+    setup(
+        name="simple-ctcdecode",
+        version="0.0.1",
+        description="Simple, TorchScript-able CTC Decoder based on parlance/ctcdecode",
+        url="https://github.com/mthrok/ctcdecode",
+        author="moto",
+        author_email="moto@fb.com",
+        packages=find_packages(exclude=["build", "tests", "third_party", "src"]),
+        ext_modules=[Extension(name='ctcdecode.libctcdecode', sources=[])],
+        cmdclass={
+            'build_ext': CMakeBuild,
+        }
+    )
 
-setup(
-    name="ctcdecode",
-    version="1.0.2",
-    description="CTC Decoder for PyTorch based on Paddle Paddle's implementation",
-    url="https://github.com/parlance/ctcdecode",
-    author="Ryan Leary",
-    author_email="ryanleary@gmail.com",
-    # Exclude the build files.
-    packages=find_packages(exclude=["build"]),
-    ext_modules=[extension],
-    cmdclass={'build_ext': BuildExtension.with_options(no_python_abi_suffix=True)}
-)
+
+if __name__ == '__main__':
+    _main()

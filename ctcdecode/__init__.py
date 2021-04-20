@@ -1,5 +1,6 @@
 import torch
 
+
 def _init_extension():
     import os
     import importlib
@@ -13,7 +14,7 @@ def _init_extension():
     )
 
     extfinder = importlib.machinery.FileFinder(lib_dir, loader_details)
-    ext_specs = extfinder.find_spec("_ctc_decode")
+    ext_specs = extfinder.find_spec("libctcdecode")
     if ext_specs is None:
         raise ImportError("ctc_decode C++ Extension is not found.")
     torch.ops.load_library(ext_specs.origin)

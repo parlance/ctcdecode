@@ -1,16 +1,11 @@
+#include <torch/script.h>
+#include <ATen/Parallel.h>
 #include "ctc_beam_search_decoder.h"
-
-#include <algorithm>
-#include <cmath>
-#include <iostream>
-#include <limits>
-#include <map>
-#include <utility>
-
 #include "decoder_utils.h"
-#include "ThreadPool.h"
 #include "fst/fstlib.h"
 #include "path_trie.h"
+
+namespace ctcdecode {
 
 using FSTMATCH = fst::SortedMatcher<fst::StdVectorFst>;
 
@@ -19,8 +14,7 @@ DecoderState::DecoderState(const std::vector<std::string> &vocabulary,
                            double cutoff_prob,
                            size_t cutoff_top_n,
                            size_t blank_id,
-                           int log_input,
-                           Scorer *ext_scorer)
+                           int log_input)
   : abs_time_step(0)
   , beam_size(beam_size)
   , cutoff_prob(cutoff_prob)
@@ -28,7 +22,6 @@ DecoderState::DecoderState(const std::vector<std::string> &vocabulary,
   , blank_id(blank_id)
   , log_input(log_input)
   , vocabulary(vocabulary)
-  , ext_scorer(ext_scorer)
 {
   // assign space id
   auto it = std::find(vocabulary.begin(), vocabulary.end(), " ");
@@ -42,14 +35,6 @@ DecoderState::DecoderState(const std::vector<std::string> &vocabulary,
   // init prefixes' root
   root.score = root.log_prob_b_prev = 0.0;
   prefixes.push_back(&root);
-
-  if (ext_scorer != nullptr && !ext_scorer->is_character_based()) {
-    auto fst_dict = static_cast<fst::StdVectorFst *>(ext_scorer->dictionary);
-    fst::StdVectorFst *dict_ptr = fst_dict->Copy(true);
-    root.set_dictionary(dict_ptr);
-    auto matcher = std::make_shared<FSTMATCH>(*dict_ptr, fst::MATCH_INPUT);
-    root.set_matcher(matcher);
-  }
 }
 
 void
@@ -70,15 +55,6 @@ DecoderState::next(const std::vector<std::vector<double>> &probs_seq)
 
     float min_cutoff = -NUM_FLT_INF;
     bool full_beam = false;
-    if (ext_scorer != nullptr) {
-      size_t num_prefixes = std::min(prefixes.size(), beam_size);
-      std::sort(
-          prefixes.begin(), prefixes.begin() + num_prefixes, prefix_compare);
-      float blank_prob = log_input ? prob[blank_id] : std::log(prob[blank_id]);
-      min_cutoff = prefixes[num_prefixes - 1]->score +
-                   blank_prob - std::max(0.0, ext_scorer->beta);
-      full_beam = (num_prefixes == beam_size);
-    }
 
     std::vector<std::pair<size_t, float>> log_prob_idx =
         get_pruned_log_probs(prob, cutoff_prob, cutoff_top_n, log_input);
@@ -116,24 +92,6 @@ DecoderState::next(const std::vector<std::vector<double>> &probs_seq)
             log_p = log_prob_c + prefix->score;
           }
 
-          // language model scoring
-          if (ext_scorer != nullptr &&
-              (c == space_id || ext_scorer->is_character_based())) {
-            PathTrie *prefix_to_score = nullptr;
-            // skip scoring the space
-            if (ext_scorer->is_character_based()) {
-              prefix_to_score = prefix_new;
-            } else {
-              prefix_to_score = prefix;
-            }
-
-            float score = 0.0;
-            std::vector<std::string> ngram;
-            ngram = ext_scorer->make_ngram(prefix_to_score);
-            score = ext_scorer->get_log_cond_prob(ngram) * ext_scorer->alpha;
-            log_p += score;
-            log_p += ext_scorer->beta;
-          }
           prefix_new->log_prob_nb_cur =
               log_sum_exp(prefix_new->log_prob_nb_cur, log_p);
         }
@@ -169,20 +127,6 @@ DecoderState::decode() const
     scores[prefix] = prefix->score;
   }
 
-  // score the last word of each prefix that doesn't end with space
-  if (ext_scorer != nullptr && !ext_scorer->is_character_based()) {
-    for (size_t i = 0; i < beam_size && i < prefixes_copy.size(); ++i) {
-      auto prefix = prefixes_copy[i];
-      if (!prefix->is_empty() && prefix->character != space_id) {
-        float score = 0.0;
-        std::vector<std::string> ngram = ext_scorer->make_ngram(prefix);
-        score = ext_scorer->get_log_cond_prob(ngram) * ext_scorer->alpha;
-        score += ext_scorer->beta;
-        scores[prefix] += score;
-      }
-    }
-  }
-
   using namespace std::placeholders;
   size_t num_prefixes = std::min(prefixes_copy.size(), beam_size);
   std::sort(prefixes_copy.begin(), prefixes_copy.begin() + num_prefixes,
@@ -192,17 +136,6 @@ DecoderState::decode() const
   // return order of decoding result. To delete when decoder gets stable.
   for (size_t i = 0; i < beam_size && i < prefixes_copy.size(); ++i) {
     double approx_ctc = scores[prefixes_copy[i]];
-    if (ext_scorer != nullptr) {
-      std::vector<int> output;
-      std::vector<int> timesteps;
-      prefixes_copy[i]->get_path_vec(output, timesteps);
-      auto prefix_length = output.size();
-      auto words = ext_scorer->split_labels(output);
-      // remove word insert
-      approx_ctc = approx_ctc - prefix_length * ext_scorer->beta;
-      // remove language model weight:
-      approx_ctc -= (ext_scorer->get_sent_log_prob(words)) * ext_scorer->alpha;
-    }
     prefixes_copy[i]->approx_ctc = approx_ctc;
   }
 
@@ -216,11 +149,10 @@ std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
     double cutoff_prob,
     size_t cutoff_top_n,
     size_t blank_id,
-    int log_input,
-    Scorer *ext_scorer)
+    int log_input)
 {
   DecoderState state(vocabulary, beam_size, cutoff_prob, cutoff_top_n, blank_id,
-                     log_input, ext_scorer);
+                     log_input);
   state.next(probs_seq);
   return state.decode();
 }
@@ -235,33 +167,25 @@ ctc_beam_search_decoder_batch(
     double cutoff_prob,
     size_t cutoff_top_n,
     size_t blank_id,
-    int log_input,
-    Scorer *ext_scorer)
+    int log_input)
 {
-  VALID_CHECK_GT(num_processes, 0, "num_processes must be nonnegative!");
-  // thread pool
-  ThreadPool pool(num_processes);
-  // number of samples
   size_t batch_size = probs_split.size();
+  auto grain_size = batch_size / num_processes;
 
-  // enqueue the tasks of decoding
-  std::vector<std::future<std::vector<std::pair<double, Output>>>> res;
-  for (size_t i = 0; i < batch_size; ++i) {
-    res.emplace_back(pool.enqueue(ctc_beam_search_decoder,
-                                  probs_split[i],
-                                  vocabulary,
-                                  beam_size,
-                                  cutoff_prob,
-                                  cutoff_top_n,
-                                  blank_id,
-                                  log_input,
-                                  ext_scorer));
-  }
+  std::vector<std::vector<std::pair<double, Output>>> results(batch_size);
 
-  // get decoding results
-  std::vector<std::vector<std::pair<double, Output>>> batch_results;
-  for (size_t i = 0; i < batch_size; ++i) {
-    batch_results.emplace_back(res[i].get());
-  }
-  return batch_results;
+  at::parallel_for(0, batch_size, grain_size, [&](int64_t begin, int64_t end) {
+    for (auto i = begin; i < end; ++i) {
+      results[i] = ctc_beam_search_decoder(probs_split[i],
+                                          vocabulary,
+                                          beam_size,
+                                          cutoff_prob,
+                                          cutoff_top_n,
+                                          blank_id,
+                                          log_input);
+    }
+  });
+  return results;
 }
+
+} // namespace ctcdecode

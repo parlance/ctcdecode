@@ -106,7 +106,7 @@ ENV/
 # Prerequisites
 *.d
 
-# Compiled Object files
+v# Compiled Object files
 *.slo
 *.lo
 *.o
@@ -136,4 +136,5 @@ ENV/
 *.out
 *.app
 
-ctcdecode/ctcdecode.xcodeproj/
+third_party/archives
+third_party/install
