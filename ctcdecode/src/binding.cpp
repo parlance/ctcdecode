@@ -7,30 +7,8 @@
 #include "scorer.h"
 #include "ctc_beam_search_decoder.h"
 #include "utf8.h"
-#include "boost/shared_ptr.hpp"
-#include "boost/python.hpp"
-#include "boost/python/stl_iterator.hpp"
 
 using namespace std;
-
-template<typename T>
-inline
-std::vector< T > py_list_to_std_vector( const boost::python::object& iterable )
-{
-    return std::vector< T >( boost::python::stl_input_iterator< T >( iterable ),
-                             boost::python::stl_input_iterator< T >( ) );
-}
-
-template <class T>
-inline
-boost::python::list std_vector_to_py_list(std::vector<T> vector) {
-    typename std::vector<T>::iterator iter;
-    boost::python::list list;
-    for (iter = vector.begin(); iter != vector.end(); ++iter) {
-        list.append(*iter);
-    }
-    return list;
-}
 
 int beam_decode(at::Tensor th_probs,
                 at::Tensor th_seq_lens,
