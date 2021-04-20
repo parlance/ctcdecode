@@ -52,21 +52,20 @@ ctc_beam_search_decoder_batch(
   });
   return results;
 }
-  
-int beam_decode(torch::Tensor th_probs,
+
+using decoder_output = std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>;
+
+
+decoder_output beam_decode(torch::Tensor th_probs,
                 torch::Tensor th_seq_lens,
                 std::vector<std::string> new_vocab,
-                int vocab_size,
-                size_t beam_size,
-                size_t num_processes,
+                int64_t vocab_size,
+                int64_t beam_size,
+                int64_t num_processes,
                 double cutoff_prob,
-                size_t cutoff_top_n,
-                size_t blank_id,
-                bool log_input,
-                torch::Tensor th_output,
-                torch::Tensor th_timesteps,
-                torch::Tensor th_scores,
-                torch::Tensor th_out_length)
+                int64_t cutoff_top_n,
+                int64_t blank_id,
+                bool log_input)
 {
     const int64_t max_time = th_probs.size(1);
     const int64_t batch_size = th_probs.size(0);
@@ -90,12 +89,20 @@ int beam_decode(torch::Tensor th_probs,
     }
 
     std::vector<std::vector<std::pair<double, Output>>> batch_results =
-    ctc_beam_search_decoder_batch(inputs, new_vocab, beam_size, num_processes, cutoff_prob, cutoff_top_n, blank_id, log_input);
-    auto outputs_accessor = th_output.accessor<int, 3>();
-    auto timesteps_accessor =  th_timesteps.accessor<int, 3>();
-    auto scores_accessor =  th_scores.accessor<float, 2>();
-    auto out_length_accessor =  th_out_length.accessor<int, 2>();
+    ctc_beam_search_decoder_batch(
+        inputs, new_vocab, beam_size, num_processes, cutoff_prob, cutoff_top_n, blank_id, log_input);
 
+    std::cout << "foo\n" << std::endl << std::flush;
+    auto max_seq_len = th_probs.size(1);
+    auto beams = torch::empty({batch_size, beam_size, max_seq_len}, torch::kInt32);
+    auto lengths = torch::zeros({batch_size, beam_size}, torch::kInt32);
+    auto scores = torch::empty({batch_size, beam_size}, torch::kFloat);
+    auto timesteps = torch::empty({batch_size, beam_size, max_seq_len}, torch::kInt32);
+
+    auto outputs_accessor = beams.accessor<int, 3>();
+    auto out_length_accessor =  lengths.accessor<int, 2>();
+    auto scores_accessor =  scores.accessor<float, 2>();
+    auto timesteps_accessor =  timesteps.accessor<int, 3>();
 
     for (int b = 0; b < batch_results.size(); ++b){
         std::vector<std::pair<double, Output>> results = batch_results[b];
@@ -112,29 +119,11 @@ int beam_decode(torch::Tensor th_probs,
             out_length_accessor[b][p] = output_tokens.size();
         }
     }
-    return 1;
-}
-
-int64_t paddle_beam_decode(torch::Tensor th_probs,
-                       torch::Tensor th_seq_lens,
-                       std::vector<std::string> labels,
-                       int64_t vocab_size,
-                       int64_t beam_size,
-                       int64_t num_processes,
-                       double cutoff_prob,
-                       int64_t cutoff_top_n,
-                       int64_t blank_id,
-                       int64_t log_input,
-                       torch::Tensor th_output,
-                       torch::Tensor th_timesteps,
-                       torch::Tensor th_scores,
-                       torch::Tensor th_out_length){
-    return beam_decode(th_probs, th_seq_lens, labels, vocab_size, beam_size, num_processes,
-                cutoff_prob, cutoff_top_n, blank_id, log_input, th_output, th_timesteps, th_scores, th_out_length);
+    return std::make_tuple(beams, lengths, scores, timesteps);
 }
 
 TORCH_LIBRARY(ctcdecode, m) {
-  m.def("paddle_beam_decode", &paddle_beam_decode);
+  m.def("beam_decode", &beam_decode);
 }
 
 } // namespace

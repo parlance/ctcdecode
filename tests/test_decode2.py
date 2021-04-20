@@ -55,7 +55,7 @@ def test_decode_wav2vec2():
         blank_id=0,
         log_probs_input=True,
     )
-    beam_results, beam_scores, timesteps, out_lens = decoder.decode(encoder_output)
+    beam_results, out_lens, beam_scores, timesteps = decoder.decode(encoder_output)
     transcript = "".join([WAV2VEC2_ENGLISH_LABEL[n] for n in beam_results[0][0][:out_lens[0][0]]])
 
     assert transcript == 'ALSO|A|POPULAR|CONTRIVANCE|WHEREBY|LOVE|MAKING|MAY|BE|SUSPENDED|BUT|NOT|STOPPED|DURING|THE|PICNIC|SEASON|'
