@@ -1,13 +1,6 @@
-#include <algorithm>
-#include <iostream>
-#include <string>
-#include <vector>
 #include <torch/torch.h>
-#include <memory>
-#include "scorer.h"
 #include "ctc_beam_search_decoder.h"
 
-using namespace std;
 
 int beam_decode(at::Tensor th_probs,
                 at::Tensor th_seq_lens,
@@ -19,16 +12,11 @@ int beam_decode(at::Tensor th_probs,
                 size_t cutoff_top_n,
                 size_t blank_id,
                 bool log_input,
-                void *scorer,
                 at::Tensor th_output,
                 at::Tensor th_timesteps,
                 at::Tensor th_scores,
                 at::Tensor th_out_length)
 {
-    Scorer *ext_scorer = NULL;
-    if (scorer != NULL) {
-        ext_scorer = static_cast<Scorer *>(scorer);
-    }
     const int64_t max_time = th_probs.size(1);
     const int64_t batch_size = th_probs.size(0);
     const int64_t num_classes = th_probs.size(2);
@@ -51,7 +39,7 @@ int beam_decode(at::Tensor th_probs,
     }
 
     std::vector<std::vector<std::pair<double, Output>>> batch_results =
-    ctc_beam_search_decoder_batch(inputs, new_vocab, beam_size, num_processes, cutoff_prob, cutoff_top_n, blank_id, log_input, ext_scorer);
+    ctc_beam_search_decoder_batch(inputs, new_vocab, beam_size, num_processes, cutoff_prob, cutoff_top_n, blank_id, log_input, NULL);
     auto outputs_accessor = th_output.accessor<int, 3>();
     auto timesteps_accessor =  th_timesteps.accessor<int, 3>();
     auto scores_accessor =  th_scores.accessor<float, 2>();
@@ -90,71 +78,10 @@ int paddle_beam_decode(at::Tensor th_probs,
                        at::Tensor th_timesteps,
                        at::Tensor th_scores,
                        at::Tensor th_out_length){
-
     return beam_decode(th_probs, th_seq_lens, labels, vocab_size, beam_size, num_processes,
-                cutoff_prob, cutoff_top_n, blank_id, log_input, NULL, th_output, th_timesteps, th_scores, th_out_length);
+                cutoff_prob, cutoff_top_n, blank_id, log_input, th_output, th_timesteps, th_scores, th_out_length);
 }
-
-int paddle_beam_decode_lm(at::Tensor th_probs,
-                          at::Tensor th_seq_lens,
-                          std::vector<std::string> labels,
-                          int vocab_size,
-                          size_t beam_size,
-                          size_t num_processes,
-                          double cutoff_prob,
-                          size_t cutoff_top_n,
-                          size_t blank_id,
-                          int log_input,
-                          void *scorer,
-                          at::Tensor th_output,
-                          at::Tensor th_timesteps,
-                          at::Tensor th_scores,
-                          at::Tensor th_out_length){
-
-    return beam_decode(th_probs, th_seq_lens, labels, vocab_size, beam_size, num_processes,
-                cutoff_prob, cutoff_top_n, blank_id, log_input, scorer, th_output, th_timesteps, th_scores, th_out_length);
-}
-
-
-void* paddle_get_scorer(double alpha,
-                        double beta,
-                        const char* lm_path,
-                        vector<std::string> new_vocab,
-                        int vocab_size) {
-    Scorer* scorer = new Scorer(alpha, beta, lm_path, new_vocab);
-    return static_cast<void*>(scorer);
-}
-
-void paddle_release_scorer(void* scorer) {
-    delete static_cast<Scorer*>(scorer);
-}
-
-int is_character_based(void *scorer){
-    Scorer *ext_scorer  = static_cast<Scorer *>(scorer);
-    return ext_scorer->is_character_based();
-}
-size_t get_max_order(void *scorer){
-    Scorer *ext_scorer  = static_cast<Scorer *>(scorer);
-    return ext_scorer->get_max_order();
-}
-size_t get_dict_size(void *scorer){
-    Scorer *ext_scorer  = static_cast<Scorer *>(scorer);
-    return ext_scorer->get_dict_size();
-}
-
-void reset_params(void *scorer, double alpha, double beta){
-    Scorer *ext_scorer  = static_cast<Scorer *>(scorer);
-    ext_scorer->reset_params(alpha, beta);
-}
-
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
   m.def("paddle_beam_decode", &paddle_beam_decode, "paddle_beam_decode");
-  m.def("paddle_beam_decode_lm", &paddle_beam_decode_lm, "paddle_beam_decode_lm");
-  m.def("paddle_get_scorer", &paddle_get_scorer, "paddle_get_scorer");
-  m.def("paddle_release_scorer", &paddle_release_scorer, "paddle_release_scorer");
-  m.def("is_character_based", &is_character_based, "is_character_based");
-  m.def("get_max_order", &get_max_order, "get_max_order");
-  m.def("get_dict_size", &get_dict_size, "get_max_order");
-  m.def("reset_params", &reset_params, "reset_params");
 }

@@ -48,9 +48,6 @@ def test_decode_wav2vec2():
     )
     decoder = CTCBeamDecoder(
         WAV2VEC2_ENGLISH_LABEL,
-        model_path=None,
-        alpha=0,
-        beta=0,
         cutoff_top_n=40,
         cutoff_prob=1.0,
         beam_width=100,
