@@ -6,7 +6,6 @@
 #include <memory>
 #include "scorer.h"
 #include "ctc_beam_search_decoder.h"
-#include "utf8.h"
 
 using namespace std;
 

@@ -54,7 +54,7 @@ if compile_test('lzma.h', 'lzma'):
     compile_args.append('-DHAVE_XZLIB')
     ext_libs.append('lzma')
 
-third_party_libs = ["kenlm", "openfst-1.6.7/src/include", "ThreadPool", "utf8"]
+third_party_libs = ["kenlm", "openfst-1.6.7/src/include", "ThreadPool"]
 compile_args.extend(['-DINCLUDE_KENLM', '-DKENLM_MAX_ORDER=6'])
 lib_sources = glob.glob('third_party/kenlm/util/*.cc') + glob.glob('third_party/kenlm/lm/*.cc') + glob.glob(
     'third_party/kenlm/util/double-conversion/*.cc') + glob.glob('third_party/openfst-1.6.7/src/lib/*.cc')
