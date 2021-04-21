@@ -58,7 +58,7 @@ class TestDecoders(unittest.TestCase):
 
     def test_beam_search_decoder_1(self):
         probs_seq = torch.FloatTensor([self.probs_seq1])
-        decoder = ctcdecode.CTCBeamDecoder(self.vocab_list, beam_width=self.beam_size,
+        decoder = ctcdecode.CTCBeamDecoder(self.vocab_list, beam_size=self.beam_size,
                                            blank_id=self.vocab_list.index('_'))
         beam_result, out_seq_len, beam_scores, timesteps = decoder.decode(probs_seq)
         output_str = self.convert_to_string(beam_result[0][0], self.vocab_list, out_seq_len[0][0])
@@ -66,7 +66,7 @@ class TestDecoders(unittest.TestCase):
 
     def test_beam_search_decoder_2(self):
         probs_seq = torch.FloatTensor([self.probs_seq2])
-        decoder = ctcdecode.CTCBeamDecoder(self.vocab_list, beam_width=self.beam_size,
+        decoder = ctcdecode.CTCBeamDecoder(self.vocab_list, beam_size=self.beam_size,
                                            blank_id=self.vocab_list.index('_'))
         beam_result, out_seq_len, beam_scores, timesteps = decoder.decode(probs_seq)
         output_str = self.convert_to_string(beam_result[0][0], self.vocab_list, out_seq_len[0][0])
@@ -77,7 +77,7 @@ class TestDecoders(unittest.TestCase):
         lm_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'test.arpa')
         probs_seq = torch.FloatTensor([self.probs_seq2])
 
-        decoder = ctcdecode.CTCBeamDecoder(self.vocab_list, beam_width=self.beam_size,
+        decoder = ctcdecode.CTCBeamDecoder(self.vocab_list, beam_size=self.beam_size,
                                            blank_id=self.vocab_list.index('_'),
                                            model_path=lm_path)
         beam_result, out_seq_len, beam_scores, timesteps = decoder.decode(probs_seq)
@@ -86,7 +86,7 @@ class TestDecoders(unittest.TestCase):
 
     def test_beam_search_decoder_batch(self):
         probs_seq = torch.FloatTensor([self.probs_seq1, self.probs_seq2])
-        decoder = ctcdecode.CTCBeamDecoder(self.vocab_list, beam_width=self.beam_size,
+        decoder = ctcdecode.CTCBeamDecoder(self.vocab_list, beam_size=self.beam_size,
                                            blank_id=self.vocab_list.index('_'), num_processes=24)
         beam_results, out_seq_len, beam_scores, timesteps = decoder.decode(probs_seq)
         output_str1 = self.convert_to_string(beam_results[0][0], self.vocab_list, out_seq_len[0][0])
@@ -96,8 +96,8 @@ class TestDecoders(unittest.TestCase):
     
     def test_beam_search_decoder_batch_log(self):
         probs_seq = torch.FloatTensor([self.probs_seq1, self.probs_seq2]).log()
-        decoder = ctcdecode.CTCBeamDecoder(self.vocab_list, beam_width=self.beam_size,
-                                           blank_id=self.vocab_list.index('_'), log_probs_input=True,
+        decoder = ctcdecode.CTCBeamDecoder(self.vocab_list, beam_size=self.beam_size,
+                                           blank_id=self.vocab_list.index('_'), is_nll=True,
                                            num_processes=24)
         beam_results, out_seq_len, beam_scores, timesteps = decoder.decode(probs_seq)
         output_str1 = self.convert_to_string(beam_results[0][0], self.vocab_list, out_seq_len[0][0])

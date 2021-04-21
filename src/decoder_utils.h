@@ -18,19 +18,6 @@ const float NUM_FLT_INF  = std::numeric_limits<float>::max();
 const float NUM_FLT_MIN  = std::numeric_limits<float>::min();
 const float NUM_FLT_LOGE = 0.4342944819;
 
-// inline function for validation check
-inline void check(
-    bool x, const char *expr, const char *file, int line, const char *err) {
-  if (!x) {
-    std::cout << "[" << file << ":" << line << "] ";
-    LOG(FATAL) << "\"" << expr << "\" check failed. " << err;
-  }
-}
-
-#define VALID_CHECK(x, info) \
-  check(static_cast<bool>(x), #x, __FILE__, __LINE__, info)
-#define VALID_CHECK_EQ(x, y, info) VALID_CHECK((x) == (y), info)
- 
 // Function template for comparing two pairs
 template <typename T1, typename T2>
 bool pair_comp_first_rev(const std::pair<T1, T2> &a,

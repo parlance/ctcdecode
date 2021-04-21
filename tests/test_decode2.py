@@ -50,10 +50,10 @@ def test_decode_wav2vec2():
         WAV2VEC2_ENGLISH_LABEL,
         cutoff_top_n=40,
         cutoff_prob=1.0,
-        beam_width=100,
+        beam_size=100,
         num_processes=4,
         blank_id=0,
-        log_probs_input=True,
+        is_nll=True,
     )
     beam_results, out_lens, beam_scores, timesteps = decoder.decode(encoder_output)
     transcript = "".join([WAV2VEC2_ENGLISH_LABEL[n] for n in beam_results[0][0][:out_lens[0][0]]])

@@ -15,25 +15,32 @@ beam_decode(
             c10::optional<torch::Tensor> seq_lens_,
             std::vector<std::string> vocabulary,
             int64_t beam_size,
-            int64_t num_processes,
-            c10::optional<double> cutoff_prob_,
             int64_t cutoff_top_n,
+            c10::optional<double> cutoff_prob_,
             int64_t blank_id,
-            bool log_input) {
-  const double cutoff_prob = cutoff_prob_.value_or(1.0);
+            bool is_nll,
+            int64_t num_processes) {
+
+  const double cutoff_prob = cutoff_prob_.value_or(1.1);
+  const int64_t num_classes = vocabulary.size();
 
   TORCH_CHECK(probs.ndimension() == 3, "`probs` has to be 3D Tensor.");
   TORCH_CHECK(probs.device().is_cpu(), "`probs` has to be on CPU.");
   TORCH_CHECK(probs.dtype() == torch::kFloat, "`probs` has to be float Tensor.");
+  TORCH_CHECK(
+      probs.size(2) == num_classes,
+      "The 3rd dimension of `probs` has to match the size of the vocabulary.");
 
   const int64_t batch_size = probs.size(0);
   const int64_t max_seq_len = probs.size(1);
-  const int64_t num_classes = probs.size(2);
 
   auto seq_lens = [&](){
     if (seq_lens_.has_value()) {
       auto seq_lens = seq_lens_.value();
       TORCH_CHECK(seq_lens.ndimension() == 1, "When provided, `seq_lens` has to be 1D Tensor.");
+      TORCH_CHECK(
+        seq_lens.size(0) == batch_size,
+        "When provided, `seq_lens` has to have the same batch size as `probs`.");
       TORCH_CHECK(seq_lens.device().is_cpu(), "When provided, `seq_lens` has to be on CPU.");
       TORCH_CHECK(seq_lens.dtype() == torch::kInt32, "When provided, `seq_lens` has to be on CPU.");
       TORCH_CHECK(
@@ -72,7 +79,7 @@ beam_decode(
                                                    cutoff_prob,
                                                    cutoff_top_n,
                                                    blank_id,
-                                                   log_input);
+                                                   is_nll);
       }
     });
 

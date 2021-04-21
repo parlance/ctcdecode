@@ -4,58 +4,72 @@ import torch
 
 
 class CTCBeamDecoder(torch.nn.Module):
-    """
-    PyTorch wrapper for DeepSpeech PaddlePaddle Beam Search Decoder.
+    """Beam search decoder
+
+    The implementation was ported from
+
+    * https://github.com/parlance/ctcdecode
+    * https://github.com/PaddlePaddle/DeepSpeech
+
     Args:
-        labels (list): The tokens/vocab used to train your model.
-                        They should be in the same order as they are in your model's outputs.
-        beam_width (int): This controls how broad the beam search is. Higher values are more likely to find top beams,
-                            but they also will make your beam search exponentially slower.
-        model_path (basestring): The path to your external KenLM language model(LM)
-        alpha (float): Weighting associated with the LMs probabilities.
-                        A weight of 0 means the LM has no effect.
-        beta (float):  Weight associated with the number of words within our beam.
-        cutoff_top_n (int): Cutoff number in pruning. Only the top cutoff_top_n characters
-                            with the highest probability in the vocab will be used in beam search.
-        cutoff_prob (float): Cutoff probability in pruning. 1.0 means no pruning.
-        num_processes (int): Parallelize the batch using num_processes workers. 
-        blank_id (int): Index of the CTC blank token (probably 0) used when training your model.
-        log_probs_input (bool): False if your model has passed through a softmax and output probabilities sum to 1.
+        labels (list):
+            The tokens/vocabulary used in model training. It must be ordered
+            in the same way as the model's output.
+        beam_size (int):
+            The number of beams to retain / returned. Providing higher values
+            could return beams with better scores, but it will make the search
+            exponentially slower.
+        cutoff_top_n (int):
+            Cutoff number in pruning. Only the top ``cutoff_top_n`` labels
+            with the highest probabilities will be used in the search.
+        cutoff_prob (float):
+            Cumulative probability threshold in pruning. When provided, labels
+            with the highest probabilities, of which cumulative probability
+            does not exceed this value will be retained.
+        blank_id (int):
+            The index of the CTC blank token used in model training.
+            Typically this is 0.
+        is_nll (bool):
+            Indicates whether the probabilities will be given in the form of
+            negative log likelihood.
+        num_processes (int):
+            The number of processes to parallelize the batch.
     """
     def __init__(
             self,
             labels: List[str],
-            beam_width: int = 100,
+            beam_size: int = 100,
             cutoff_top_n: int = 40,
-            cutoff_prob: Optional[int] = None,
-            num_processes: int = 4,
+            cutoff_prob: Optional[float] = None,
             blank_id: int = 0,
-            log_probs_input: bool = False,
+            is_nll: bool = False,
+            num_processes: int = 4,
     ):
-        self.cutoff_top_n = cutoff_top_n
-        self.beam_width = beam_width
-        self.num_processes = num_processes
         self.labels = labels
-        self.blank_id = blank_id
-        self.log_probs = log_probs_input
+        self.beam_size = beam_size
+        self.cutoff_top_n = cutoff_top_n
         self.cutoff_prob = cutoff_prob
+        self.blank_id = blank_id
+        self.is_nll = is_nll
+        self.num_processes = num_processes
 
+    @torch.jit.export
     def decode(
             self,
             probs: torch.Tensor,
             seq_lens: Optional[torch.Tensor] = None,
     ):
-        """
-        Conducts the beamsearch on model outputs and return results.
+        """Performs beam search on the sequence of probabilities
+
         Args:
             probs (torch.Tensor):
-                Encoder output.
+                Sequences of probabilities (or negative log likelihood when
+                ``log_probs`` is True.) over labels. The output from encoder.
                 Shape: ``[batch, num_timesteps, num_labels]``.
             seq_lens (torch.Tensor, optional):
-                The sequence length of the items in the batch.
+                The valid length of sequences in the batch.
                 Shape: ``[batch]``.
-                If not provided, the size of axis 1 (``num_timesteps``) of ``probs``
-                is used for all items.
+                If not provided, ``num_timesteps`` is used for all items.
 
         Returns:
             Tuple of four torch.Tensors: Tuple of ``beams``, ``length``, ``scores`` and ``timesteps``
@@ -74,6 +88,8 @@ class CTCBeamDecoder(torch.nn.Module):
                 Shape: ``[batch, num_beams, num_timesteps]``.
         """
         return torch.ops.ctcdecode.beam_decode(
-            probs, seq_lens, self.labels, self.beam_width,
-            self.num_processes, self.cutoff_prob, self.cutoff_top_n,
-            self.blank_id, self.log_probs)
+            probs, seq_lens, self.labels, self.beam_size,
+            self.cutoff_top_n, self.cutoff_prob,
+            self.blank_id, self.is_nll,
+            self.num_processes,
+        )
