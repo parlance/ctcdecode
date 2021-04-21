@@ -1,7 +1,7 @@
 import os
 
 import torch
-from ctcdecode import CTCBeamDecoder
+from ctcdecode import CTCBeamSearchDecoder
 
 WAV2VEC2_ENGLISH_LABEL = [
     '<s>',
@@ -46,7 +46,7 @@ def test_decode_wav2vec2():
             'librispeech-test-clean-121-121726-0000-with-wav2vec_small_960h.pt',
         )
     )
-    decoder = CTCBeamDecoder(
+    decoder = CTCBeamSearchDecoder(
         WAV2VEC2_ENGLISH_LABEL,
         cutoff_top_n=40,
         cutoff_prob=1.0,

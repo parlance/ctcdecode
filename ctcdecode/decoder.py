@@ -3,7 +3,7 @@ from typing import List, Optional
 import torch
 
 
-class CTCBeamDecoder(torch.nn.Module):
+class CTCBeamSearchDecoder(torch.nn.Module):
     """Beam search decoder
 
     The implementation was ported from
@@ -45,6 +45,7 @@ class CTCBeamDecoder(torch.nn.Module):
             is_nll: bool = False,
             num_processes: int = 4,
     ):
+        super().__init__()
         self.labels = labels
         self.beam_size = beam_size
         self.cutoff_top_n = cutoff_top_n

@@ -25,4 +25,4 @@ _init_extension()
 del _init_extension
 
 
-from .decoder import CTCBeamDecoder
+from .decoder import CTCBeamSearchDecoder
