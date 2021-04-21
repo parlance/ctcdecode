@@ -54,7 +54,7 @@ beam_decode(torch::Tensor probs, c10::optional<torch::Tensor> seq_lens_,
   auto prob_accessor = probs.accessor<float, 3>();
   auto seq_len_accessor = seq_lens.accessor<int, 1>();
 
-  // TODO: use slicing and memcpy
+  // TODO: use slicing and memcpy OR pass Tensor directly to ctc_beam_search_decoder
   for (int64_t b = 0; b < batch_size; ++b) {
     int seq_len = (int)seq_len_accessor[b];
     std::vector<std::vector<double>> temp(seq_len,

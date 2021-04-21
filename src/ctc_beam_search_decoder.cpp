@@ -1,12 +1,8 @@
-#include <fst/fstlib.h>
-
 #include "ctc_beam_search_decoder.h"
 #include "decoder_utils.h"
 #include "path_trie.h"
 
 namespace ctcdecode {
-
-using FSTMATCH = fst::SortedMatcher<fst::StdVectorFst>;
 
 DecoderState::DecoderState(const std::vector<std::string> &vocabulary,
                            size_t beam_size, double cutoff_prob,

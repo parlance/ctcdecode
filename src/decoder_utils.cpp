@@ -68,45 +68,6 @@ get_beam_search_result(const std::vector<PathTrie *> &prefixes,
   return output_vecs;
 }
 
-std::vector<std::string> split_utf8_str(const std::string &str) {
-  std::vector<std::string> result;
-  std::string out_str;
-
-  for (char c : str) {
-    if ((c & 0xc0) != 0x80) // new UTF-8 character
-    {
-      if (!out_str.empty()) {
-        result.push_back(out_str);
-        out_str.clear();
-      }
-    }
-
-    out_str.append(1, c);
-  }
-  result.push_back(out_str);
-  return result;
-}
-
-std::vector<std::string> split_str(const std::string &s,
-                                   const std::string &delim) {
-  std::vector<std::string> result;
-  std::size_t start = 0, delim_len = delim.size();
-  while (true) {
-    std::size_t end = s.find(delim, start);
-    if (end == std::string::npos) {
-      if (start < s.size()) {
-        result.push_back(s.substr(start));
-      }
-      break;
-    }
-    if (end > start) {
-      result.push_back(s.substr(start, end - start));
-    }
-    start = end + delim_len;
-  }
-  return result;
-}
-
 bool prefix_compare(const PathTrie *x, const PathTrie *y) {
   if (x->score == y->score) {
     if (x->character == y->character) {
