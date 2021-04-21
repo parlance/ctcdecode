@@ -106,7 +106,7 @@ ENV/
 # Prerequisites
 *.d
 
-v# Compiled Object files
+# Compiled Object files
 *.slo
 *.lo
 *.o
