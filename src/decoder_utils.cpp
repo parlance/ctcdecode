@@ -2,11 +2,9 @@
 
 namespace ctcdecode {
 
-std::vector<std::pair<size_t, float>> get_pruned_log_probs(
-    const std::vector<double> &prob_step,
-    double cutoff_prob,
-    size_t cutoff_top_n,
-    int log_input) {
+std::vector<std::pair<size_t, float>>
+get_pruned_log_probs(const std::vector<double> &prob_step, double cutoff_prob,
+                     size_t cutoff_top_n, int log_input) {
   std::vector<std::pair<int, double>> prob_idx;
   double log_cutoff_prob = log(cutoff_prob);
   for (size_t i = 0; i < prob_step.size(); ++i) {
@@ -15,17 +13,19 @@ std::vector<std::pair<size_t, float>> get_pruned_log_probs(
   // pruning of vacobulary
   size_t cutoff_len = prob_step.size();
   if (log_cutoff_prob < 0.0 || cutoff_top_n < cutoff_len) {
-    std::sort(
-        prob_idx.begin(), prob_idx.end(), pair_comp_second_rev<int, double>);
+    std::sort(prob_idx.begin(), prob_idx.end(),
+              pair_comp_second_rev<int, double>);
     if (log_cutoff_prob < 0.0) {
       double cum_prob = 0.0;
       cutoff_len = 0;
       for (size_t i = 0; i < prob_idx.size(); ++i) {
-        cum_prob = log_sum_exp(cum_prob, log_input ? prob_idx[i].second : log(prob_idx[i].second) );
+        cum_prob = log_sum_exp(cum_prob, log_input ? prob_idx[i].second
+                                                   : log(prob_idx[i].second));
         cutoff_len += 1;
-        if (cum_prob >= cutoff_prob || cutoff_len >= cutoff_top_n) break;
+        if (cum_prob >= cutoff_prob || cutoff_len >= cutoff_top_n)
+          break;
       }
-    }else{
+    } else {
       cutoff_len = cutoff_top_n;
     }
     prob_idx = std::vector<std::pair<int, double>>(
@@ -34,15 +34,15 @@ std::vector<std::pair<size_t, float>> get_pruned_log_probs(
   std::vector<std::pair<size_t, float>> log_prob_idx;
   for (size_t i = 0; i < cutoff_len; ++i) {
     log_prob_idx.push_back(std::pair<int, float>(
-        prob_idx[i].first, log_input ? prob_idx[i].second : log(prob_idx[i].second + NUM_FLT_MIN)));
+        prob_idx[i].first, log_input ? prob_idx[i].second
+                                     : log(prob_idx[i].second + NUM_FLT_MIN)));
   }
   return log_prob_idx;
 }
 
-
-std::vector<std::pair<double, Output>> get_beam_search_result(
-    const std::vector<PathTrie *> &prefixes,
-    size_t beam_size) {
+std::vector<std::pair<double, Output>>
+get_beam_search_result(const std::vector<PathTrie *> &prefixes,
+                       size_t beam_size) {
   // allow for the post processing
   std::vector<PathTrie *> space_prefixes;
   if (space_prefixes.empty()) {
@@ -61,7 +61,7 @@ std::vector<std::pair<double, Output>> get_beam_search_result(
     outputs.tokens = output;
     outputs.timesteps = timesteps;
     std::pair<double, Output> output_pair(-space_prefixes[i]->approx_ctc,
-                                               outputs);
+                                          outputs);
     output_vecs.emplace_back(output_pair);
   }
 
@@ -81,7 +81,7 @@ std::vector<std::string> split_utf8_str(const std::string &str) {
   std::string out_str;
 
   for (char c : str) {
-    if ((c & 0xc0) != 0x80)  // new UTF-8 character
+    if ((c & 0xc0) != 0x80) // new UTF-8 character
     {
       if (!out_str.empty()) {
         result.push_back(out_str);
@@ -127,8 +127,9 @@ bool prefix_compare(const PathTrie *x, const PathTrie *y) {
   }
 }
 
-bool prefix_compare_external_scores(const PathTrie *x, const PathTrie *y,
-                                    const std::unordered_map<const PathTrie*, float>& scores) {
+bool prefix_compare_external_scores(
+    const PathTrie *x, const PathTrie *y,
+    const std::unordered_map<const PathTrie *, float> &scores) {
   if (scores.at(x) == scores.at(y)) {
     if (x->character == y->character) {
       return false;
@@ -159,10 +160,8 @@ void add_word_to_fst(const std::vector<int> &word,
 
 bool add_word_to_dictionary(
     const std::string &word,
-    const std::unordered_map<std::string, int> &char_map,
-    bool add_space,
-    int SPACE_ID,
-    fst::StdVectorFst *dictionary) {
+    const std::unordered_map<std::string, int> &char_map, bool add_space,
+    int SPACE_ID, fst::StdVectorFst *dictionary) {
   auto characters = split_utf8_str(word);
 
   std::vector<int> int_word;
@@ -175,7 +174,7 @@ bool add_word_to_dictionary(
       if (int_c != char_map.end()) {
         int_word.push_back(int_c->second);
       } else {
-        return false;  // return without adding
+        return false; // return without adding
       }
     }
   }
@@ -185,7 +184,7 @@ bool add_word_to_dictionary(
   }
 
   add_word_to_fst(int_word, dictionary);
-  return true;  // return with successful adding
+  return true; // return with successful adding
 }
 
 } // namespace ctcdecode

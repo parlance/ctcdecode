@@ -1,8 +1,8 @@
 #pragma once
 
-#include <vector>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "output.h"
 #include "path_trie.h"
@@ -23,17 +23,14 @@ namespace ctcdecode {
  *     in desending order.
 */
 
-std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
-    const std::vector<std::vector<double>> &probs_seq,
-    const std::vector<std::string> &vocabulary,
-    size_t beam_size,
-    double cutoff_prob = 1.0,
-    size_t cutoff_top_n = 40,
-    size_t blank_id = 0,
-    int log_input = 0);
+std::vector<std::pair<double, Output>>
+ctc_beam_search_decoder(const std::vector<std::vector<double>> &probs_seq,
+                        const std::vector<std::string> &vocabulary,
+                        size_t beam_size, double cutoff_prob = 1.0,
+                        size_t cutoff_top_n = 40, size_t blank_id = 0,
+                        int log_input = 0);
 
-class DecoderState
-{
+class DecoderState {
   int abs_time_step;
   int space_id;
   size_t beam_size;
@@ -43,7 +40,7 @@ class DecoderState
   int log_input;
   std::vector<std::string> vocabulary;
 
-  std::vector<PathTrie*> prefixes;
+  std::vector<PathTrie *> prefixes;
   PathTrie root;
 
 public:
@@ -54,12 +51,9 @@ public:
    *     beam_size: The width of beam search.
    *     cutoff_prob: Cutoff probability for pruning.
    *     cutoff_top_n: Cutoff number for pruning.
-  */
-  DecoderState(const std::vector<std::string> &vocabulary,
-               size_t beam_size,
-               double cutoff_prob,
-               size_t cutoff_top_n,
-               size_t blank_id,
+   */
+  DecoderState(const std::vector<std::string> &vocabulary, size_t beam_size,
+               double cutoff_prob, size_t cutoff_top_n, size_t blank_id,
                int log_input);
   ~DecoderState() = default;
 
@@ -68,7 +62,7 @@ public:
    * Parameters:
    *     probs: 2-D vector where each element is a vector of probabilities
    *               over alphabet of one time step.
-  */
+   */
   void next(const std::vector<std::vector<double>> &probs_seq);
 
   /* Get current transcription from the decoder stream state
@@ -76,7 +70,7 @@ public:
    * Return:
    *     A vector where each element is a pair of score and decoding result,
    *     in descending order.
-  */
+   */
   std::vector<std::pair<double, Output>> decode() const;
 };
 

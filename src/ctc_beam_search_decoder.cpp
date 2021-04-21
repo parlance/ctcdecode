@@ -9,19 +9,11 @@ namespace ctcdecode {
 using FSTMATCH = fst::SortedMatcher<fst::StdVectorFst>;
 
 DecoderState::DecoderState(const std::vector<std::string> &vocabulary,
-                           size_t beam_size,
-                           double cutoff_prob,
-                           size_t cutoff_top_n,
-                           size_t blank_id,
-                           int log_input)
-  : abs_time_step(0)
-  , beam_size(beam_size)
-  , cutoff_prob(cutoff_prob)
-  , cutoff_top_n(cutoff_top_n)
-  , blank_id(blank_id)
-  , log_input(log_input)
-  , vocabulary(vocabulary)
-{
+                           size_t beam_size, double cutoff_prob,
+                           size_t cutoff_top_n, size_t blank_id, int log_input)
+    : abs_time_step(0), beam_size(beam_size), cutoff_prob(cutoff_prob),
+      cutoff_top_n(cutoff_top_n), blank_id(blank_id), log_input(log_input),
+      vocabulary(vocabulary) {
   // assign space id
   auto it = std::find(vocabulary.begin(), vocabulary.end(), " ");
   // if no space in vocabulary
@@ -36,12 +28,11 @@ DecoderState::DecoderState(const std::vector<std::string> &vocabulary,
   prefixes.push_back(&root);
 }
 
-void
-DecoderState::next(const std::vector<std::vector<double>> &probs_seq)
-{
+void DecoderState::next(const std::vector<std::vector<double>> &probs_seq) {
   // prefix search over time
   size_t num_time_steps = probs_seq.size();
-  for (size_t time_step = 0; time_step < num_time_steps; ++time_step, ++abs_time_step) {
+  for (size_t time_step = 0; time_step < num_time_steps;
+       ++time_step, ++abs_time_step) {
     auto &prob = probs_seq[time_step];
 
     float min_cutoff = -NUM_FLT_INF;
@@ -86,9 +77,8 @@ DecoderState::next(const std::vector<std::vector<double>> &probs_seq)
           prefix_new->log_prob_nb_cur =
               log_sum_exp(prefix_new->log_prob_nb_cur, log_p);
         }
-      }  // end of loop over prefix
-    }    // end of loop over vocabulary
-
+      } // end of loop over prefix
+    }   // end of loop over vocabulary
 
     prefixes.clear();
     // update log probs
@@ -96,25 +86,21 @@ DecoderState::next(const std::vector<std::vector<double>> &probs_seq)
 
     // only preserve top beam_size prefixes
     if (prefixes.size() >= beam_size) {
-      std::nth_element(prefixes.begin(),
-                       prefixes.begin() + beam_size,
-                       prefixes.end(),
-                       prefix_compare);
+      std::nth_element(prefixes.begin(), prefixes.begin() + beam_size,
+                       prefixes.end(), prefix_compare);
       for (size_t i = beam_size; i < prefixes.size(); ++i) {
         prefixes[i]->remove();
       }
 
       prefixes.resize(beam_size);
     }
-  }  // end of loop over time
+  } // end of loop over time
 }
 
-std::vector<std::pair<double, Output>>
-DecoderState::decode() const
-{
-  std::vector<PathTrie*> prefixes_copy = prefixes;
-  std::unordered_map<const PathTrie*, float> scores;
-  for (PathTrie* prefix : prefixes_copy) {
+std::vector<std::pair<double, Output>> DecoderState::decode() const {
+  std::vector<PathTrie *> prefixes_copy = prefixes;
+  std::unordered_map<const PathTrie *, float> scores;
+  for (PathTrie *prefix : prefixes_copy) {
     scores[prefix] = prefix->score;
   }
 
@@ -133,15 +119,11 @@ DecoderState::decode() const
   return get_beam_search_result(prefixes_copy, beam_size);
 }
 
-std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
-    const std::vector<std::vector<double>> &probs_seq,
-    const std::vector<std::string> &vocabulary,
-    size_t beam_size,
-    double cutoff_prob,
-    size_t cutoff_top_n,
-    size_t blank_id,
-    int log_input)
-{
+std::vector<std::pair<double, Output>>
+ctc_beam_search_decoder(const std::vector<std::vector<double>> &probs_seq,
+                        const std::vector<std::string> &vocabulary,
+                        size_t beam_size, double cutoff_prob,
+                        size_t cutoff_top_n, size_t blank_id, int log_input) {
   DecoderState state(vocabulary, beam_size, cutoff_prob, cutoff_top_n, blank_id,
                      log_input);
   state.next(probs_seq);

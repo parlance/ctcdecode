@@ -18,22 +18,22 @@ public:
   ~PathTrie();
 
   // get new prefix after appending new char
-  PathTrie* get_path_trie(int new_char, int new_timestep, float log_prob_c, bool reset = true);
+  PathTrie *get_path_trie(int new_char, int new_timestep, float log_prob_c,
+                          bool reset = true);
 
   // get the prefix in index from root to current node
-  PathTrie* get_path_vec(std::vector<int>& output, std::vector<int>& timesteps);
+  PathTrie *get_path_vec(std::vector<int> &output, std::vector<int> &timesteps);
 
   // get the prefix in index from some stop node to current nodel
-  PathTrie* get_path_vec(std::vector<int>& output,
-                         std::vector<int>& timesteps,
+  PathTrie *get_path_vec(std::vector<int> &output, std::vector<int> &timesteps,
                          int stop,
                          size_t max_steps = std::numeric_limits<size_t>::max());
 
   // update log probs
-  void iterate_to_vec(std::vector<PathTrie*>& output);
+  void iterate_to_vec(std::vector<PathTrie *> &output);
 
   // set dictionary for FST
-  void set_dictionary(fst::StdVectorFst* dictionary);
+  void set_dictionary(fst::StdVectorFst *dictionary);
 
   void set_matcher(std::shared_ptr<fst::SortedMatcher<fst::StdVectorFst>>);
 
@@ -51,17 +51,17 @@ public:
   float approx_ctc;
   int character;
   int timestep;
-  PathTrie* parent;
+  PathTrie *parent;
 
 private:
   int ROOT_;
   bool exists_;
   bool has_dictionary_;
 
-  std::vector<std::pair<int, PathTrie*>> children_;
+  std::vector<std::pair<int, PathTrie *>> children_;
 
   // pointer to dictionary of FST
-  fst::StdVectorFst* dictionary_;
+  fst::StdVectorFst *dictionary_;
   fst::StdVectorFst::StateId dictionary_state_;
   // true if finding ars in FST
   std::shared_ptr<fst::SortedMatcher<fst::StdVectorFst>> matcher_;
