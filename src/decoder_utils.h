@@ -7,8 +7,6 @@
 #include <utility>
 #include <vector>
 
-#include <fst/fstlib.h>
-
 #include "output.h"
 #include "path_trie.h"
 
@@ -60,11 +58,6 @@ bool prefix_compare_external_scores(
     const PathTrie *x, const PathTrie *y,
     const std::unordered_map<const PathTrie *, float> &scores);
 
-/* Get length of utf8 encoding string
- * See: http://stackoverflow.com/a/4063229
- */
-size_t get_utf8_str_len(const std::string &str);
-
 /* Split a string into a list of strings on a given string
  * delimiter. NB: delimiters on beginning / end of string are
  * trimmed. Eg, "FooBarFoo" split on "Foo" returns ["Bar"].
@@ -76,15 +69,5 @@ std::vector<std::string> split_str(const std::string &s,
  * UTF-8 characters (not same as chars)
  */
 std::vector<std::string> split_utf8_str(const std::string &str);
-
-// Add a word in index to the dicionary of fst
-void add_word_to_fst(const std::vector<int> &word,
-                     fst::StdVectorFst *dictionary);
-
-// Add a word in string to dictionary
-bool add_word_to_dictionary(
-    const std::string &word,
-    const std::unordered_map<std::string, int> &char_map, bool add_space,
-    int SPACE_ID, fst::StdVectorFst *dictionary);
 
 } // namespace ctcdecode
