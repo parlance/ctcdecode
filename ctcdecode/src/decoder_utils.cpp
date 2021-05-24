@@ -3,6 +3,9 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <bits/stdc++.h>
+using namespace std;
+
 
 std::vector<std::pair<size_t, float>> get_pruned_log_probs(
     const std::vector<double> &prob_step,
@@ -66,7 +69,6 @@ std::vector<std::pair<double, Output>> get_beam_search_result(
                                                outputs);
     output_vecs.emplace_back(output_pair);
   }
-
   return output_vecs;
 }
 

@@ -158,6 +158,12 @@ void PathTrie::remove() {
       parent->remove();
     }
 
+    // TODO: memory leak without this
+    // but this fix cause Segmentation fault in some cases
+    // if (dictionary_ != nullptr) {
+    //   delete dictionary_;
+    // }
+
     delete this;
   }
 }

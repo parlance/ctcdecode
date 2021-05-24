@@ -52,6 +52,7 @@ DecoderState::DecoderState(const std::vector<std::string> &vocabulary,
   }
 }
 
+
 void
 DecoderState::next(const std::vector<std::vector<double>> &probs_seq)
 {
@@ -161,7 +162,7 @@ DecoderState::next(const std::vector<std::vector<double>> &probs_seq)
 }
 
 std::vector<std::pair<double, Output>>
-DecoderState::decode() const
+DecoderState::decode()
 {
   std::vector<PathTrie*> prefixes_copy = prefixes;
   std::unordered_map<const PathTrie*, float> scores;
@@ -226,6 +227,21 @@ std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
 }
 
 
+std::vector<std::pair<double, Output>>  ctc_beam_search_decoder_with_given_state(
+    const std::vector<std::vector<double>> &probs_seq,
+    DecoderState *state,
+    bool is_eos)
+    {
+      state->next(probs_seq);
+      if (is_eos) {
+        return state->decode();
+      }
+      else {
+        return {};
+      }
+
+    }
+
 std::vector<std::vector<std::pair<double, Output>>>
 ctc_beam_search_decoder_batch(
     const std::vector<std::vector<std::vector<double>>> &probs_split,
@@ -248,14 +264,48 @@ ctc_beam_search_decoder_batch(
   std::vector<std::future<std::vector<std::pair<double, Output>>>> res;
   for (size_t i = 0; i < batch_size; ++i) {
     res.emplace_back(pool.enqueue(ctc_beam_search_decoder,
-                                  probs_split[i],
-                                  vocabulary,
+                                  std::cref(probs_split[i]),
+                                  std::cref(vocabulary),
                                   beam_size,
                                   cutoff_prob,
                                   cutoff_top_n,
                                   blank_id,
                                   log_input,
                                   ext_scorer));
+  }
+
+
+
+  // get decoding results
+  std::vector<std::vector<std::pair<double, Output>>> batch_results;
+  for (size_t i = 0; i < batch_size; ++i) {
+    batch_results.emplace_back(res[i].get());
+  }
+  return batch_results;
+}
+
+
+std::vector<std::vector<std::pair<double, Output>>> ctc_beam_search_decoder_batch_with_states
+(const std::vector<std::vector<std::vector<double>>> &probs_split,
+    size_t num_processes,
+    std::vector<void*> &states,
+    const std::vector<bool> &is_eos_s)
+
+{
+  VALID_CHECK_GT(num_processes, 0, "num_processes must be nonnegative!");
+  // thread pool
+  ThreadPool pool(num_processes);
+  // number of samples
+  size_t batch_size = probs_split.size();
+  
+
+  // enqueue the tasks of decoding
+  std::vector<std::future<std::vector<std::pair<double, Output>>>> res;
+  for (size_t i = 0; i < batch_size; ++i) {
+    res.emplace_back(pool.enqueue(ctc_beam_search_decoder_with_given_state,
+                                  std::cref(probs_split[i]),
+                                  static_cast<DecoderState*>(states[i]),
+                                  is_eos_s[i]));
   }
 
   // get decoding results

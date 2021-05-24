@@ -35,6 +35,8 @@ std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
     int log_input = 0,
     Scorer *ext_scorer = nullptr);
 
+
+
 /* CTC Beam Search Decoder for batch data
 
  * Parameters:
@@ -63,6 +65,10 @@ ctc_beam_search_decoder_batch(
     size_t blank_id = 0,
     int log_input = 0,
     Scorer *ext_scorer = nullptr);
+
+
+  
+
 
 class DecoderState
 {
@@ -114,7 +120,15 @@ public:
    *     A vector where each element is a pair of score and decoding result,
    *     in descending order.
   */
-  std::vector<std::pair<double, Output>> decode() const;
+  std::vector<std::pair<double, Output>> decode();
 };
+
+
+std::vector<std::vector<std::pair<double, Output>>> 
+ctc_beam_search_decoder_batch_with_states(
+  const std::vector<std::vector<std::vector<double>>> &probs_split,
+    size_t num_processes,
+    std::vector<void*> &states,
+    const std::vector<bool> &is_eos_s);
 
 #endif  // CTC_BEAM_SEARCH_DECODER_H_

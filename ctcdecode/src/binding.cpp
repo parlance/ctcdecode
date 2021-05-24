@@ -73,6 +73,7 @@ int beam_decode(at::Tensor th_probs,
         inputs.push_back(temp);
     }
 
+
     std::vector<std::vector<std::pair<double, Output>>> batch_results =
     ctc_beam_search_decoder_batch(inputs, new_vocab, beam_size, num_processes, cutoff_prob, cutoff_top_n, blank_id, log_input, ext_scorer);
     auto outputs_accessor = th_output.accessor<int, 3>();
@@ -148,6 +149,125 @@ void* paddle_get_scorer(double alpha,
     return static_cast<void*>(scorer);
 }
 
+
+int beam_decode_with_given_state(at::Tensor th_probs,
+                at::Tensor th_seq_lens,
+                size_t num_processes,
+                std::vector<void*> &states,
+                const std::vector<bool> &is_eos_s,
+                at::Tensor th_output,
+                at::Tensor th_timesteps,
+                at::Tensor th_scores,
+                at::Tensor th_out_length)
+{
+    const int64_t max_time = th_probs.size(1);
+    const int64_t batch_size = th_probs.size(0);
+    const int64_t num_classes = th_probs.size(2);
+
+    std::vector<std::vector<std::vector<double>>> inputs;
+    auto prob_accessor = th_probs.accessor<float, 3>();
+    auto seq_len_accessor = th_seq_lens.accessor<int, 1>();
+
+    for (int b=0; b < batch_size; ++b) {
+        // avoid a crash by ensuring that an erroneous seq_len doesn't have us try to access memory we shouldn't
+        int seq_len = std::min((int)seq_len_accessor[b], (int)max_time);
+        std::vector<std::vector<double>> temp (seq_len, std::vector<double>(num_classes));
+        for (int t=0; t < seq_len; ++t) {
+            for (int n=0; n < num_classes; ++n) {
+                float val = prob_accessor[b][t][n];
+                temp[t][n] = val;
+            }
+        }
+        inputs.push_back(temp);
+        
+    }
+
+    std::vector<std::vector<std::pair<double, Output>>> batch_results =
+    ctc_beam_search_decoder_batch_with_states(inputs, num_processes, states, is_eos_s);
+    auto outputs_accessor = th_output.accessor<int, 3>();
+    auto timesteps_accessor =  th_timesteps.accessor<int, 3>();
+    auto scores_accessor =  th_scores.accessor<float, 2>();
+    auto out_length_accessor =  th_out_length.accessor<int, 2>();
+
+    // for (size_t i = 0; i < states.size(); ++i) {
+    //     if (is_eos_s[i] && states[i] != nullptr) {
+    //         delete static_cast<DecoderState *>(states[i]);
+    //         states[i] = nullptr;
+    //     }
+    // }
+
+
+    for (int b = 0; b < batch_results.size(); ++b){
+        std::vector<std::pair<double, Output>> results = batch_results[b];
+        for (int p = 0; p < results.size();++p){
+            std::pair<double, Output> n_path_result = results[p];
+            Output output = n_path_result.second;
+            std::vector<int> output_tokens = output.tokens;
+            std::vector<int> output_timesteps = output.timesteps;
+            for (int t = 0; t < output_tokens.size(); ++t) {
+                if (t < outputs_accessor.size(2)) {
+                    outputs_accessor[b][p][t] =  output_tokens[t]; // fill output tokens
+                }
+                // else {
+                //     std::cerr << "Unsupported size: t >= outputs_accessor.size(2)\n";
+                // }
+
+                if  (t < timesteps_accessor.size(2)) {
+                    timesteps_accessor[b][p][t] = output_timesteps[t];
+                }
+                // TODO: понять, почему
+                // else {
+                //     std::cout << "Unsupported size: t >= timesteps_accessor.size(2)\n";
+                // }
+            }
+            scores_accessor[b][p] = n_path_result.first;
+            out_length_accessor[b][p] = output_tokens.size();
+        }
+    }
+
+    
+    return 1;
+}
+
+
+int paddle_beam_decode_with_given_state(at::Tensor th_probs,
+                          at::Tensor th_seq_lens,
+                          size_t num_processes,
+                          std::vector<void*> states,
+                          std::vector<bool> is_eos_s,
+                          at::Tensor th_output,
+                          at::Tensor th_timesteps,
+                          at::Tensor th_scores,
+                          at::Tensor th_out_length){
+
+    return beam_decode_with_given_state(th_probs, th_seq_lens, num_processes, states,is_eos_s, 
+    th_output, th_timesteps, th_scores, th_out_length);
+}
+
+
+
+
+void* paddle_get_decoder_state(const std::vector<std::string> &vocabulary,
+                               size_t beam_size,
+                               double cutoff_prob,
+                               size_t cutoff_top_n,
+                               size_t blank_id,
+                               int log_input,
+                                void* scorer)
+{
+    // DecoderState state(vocabulary, beam_size, cutoff_prob, cutoff_top_n, blank_id, log_input, ext_scorer);
+    Scorer *ext_scorer = NULL;
+    if (scorer != NULL) {
+        ext_scorer = static_cast<Scorer *>(scorer);
+    }
+    DecoderState* state = new DecoderState(vocabulary, beam_size, cutoff_prob, cutoff_top_n, blank_id, log_input, ext_scorer);
+    return static_cast<void*>(state);
+}
+
+void paddle_release_state(void* state) {
+    delete static_cast<DecoderState*>(state);
+}
+
 void paddle_release_scorer(void* scorer) {
     delete static_cast<Scorer*>(scorer);
 }
@@ -180,4 +300,8 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
   m.def("get_max_order", &get_max_order, "get_max_order");
   m.def("get_dict_size", &get_dict_size, "get_max_order");
   m.def("reset_params", &reset_params, "reset_params");
+  m.def("paddle_get_decoder_state", &paddle_get_decoder_state, "paddle_get_decoder_state");
+  m.def("paddle_beam_decode_with_given_state", &paddle_beam_decode_with_given_state, "paddle_beam_decode_with_given_state");
+  m.def("paddle_release_state", &paddle_release_state, "paddle_release_state");
+  //paddle_beam_decode_with_given_state
 }
