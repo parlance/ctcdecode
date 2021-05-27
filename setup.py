@@ -131,7 +131,7 @@ distutils.ccompiler.CCompiler.compile = parallelCCompile
 
 setup(
     name="ctcdecode",
-    version="1.1.0",
+    version="1.0.3",
     description="CTC Decoder for PyTorch based on Paddle Paddle's implementation",
     url="https://github.com/parlance/ctcdecode",
     author="Ryan Leary",

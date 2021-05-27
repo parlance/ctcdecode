@@ -225,7 +225,7 @@ class OnlineCTCBeamDecoder(object):
         out_seq_len = torch.zeros(batch_size, self._beam_width).cpu().int()
 
         decode_fn = ctc_decode.paddle_beam_decode_with_given_state
-        decode_fn(
+        res = decode_fn(
             probs,
             seq_lens,
             self._num_processes,
@@ -234,10 +234,11 @@ class OnlineCTCBeamDecoder(object):
             output,
             timesteps,
             scores,
-            out_seq_len,
+            out_seq_len
         )
+        res = res.int()
 
-        return output, scores, timesteps, out_seq_len
+        return res, scores, timesteps, out_seq_len
 
     def character_based(self):
         return ctc_decode.is_character_based(self._scorer) if self._scorer else None
