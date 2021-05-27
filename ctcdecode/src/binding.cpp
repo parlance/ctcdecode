@@ -150,13 +150,11 @@ void* paddle_get_scorer(double alpha,
 }
 
 
-torch::Tensor beam_decode_with_given_state(at::Tensor th_probs,
+std::pair<torch::Tensor, torch::Tensor> beam_decode_with_given_state(at::Tensor th_probs,
                 at::Tensor th_seq_lens,
                 size_t num_processes,
                 std::vector<void*> &states,
                 const std::vector<bool> &is_eos_s,
-                at::Tensor th_output,
-                at::Tensor th_timesteps,
                 at::Tensor th_scores,
                 at::Tensor th_out_length)
 {
@@ -184,7 +182,6 @@ torch::Tensor beam_decode_with_given_state(at::Tensor th_probs,
 
     std::vector<std::vector<std::pair<double, Output>>> batch_results =
     ctc_beam_search_decoder_batch_with_states(inputs, num_processes, states, is_eos_s);
-    auto outputs_accessor = th_output.accessor<int, 3>();
     
     int max_result_size = 0;
     int max_output_tokens_size = 0;
@@ -197,7 +194,6 @@ torch::Tensor beam_decode_with_given_state(at::Tensor th_probs,
             std::pair<double, Output> n_path_result = results[p];
             Output output = n_path_result.second;
             std::vector<int> output_tokens = output.tokens;
-            std::vector<int> output_timesteps = output.timesteps;
             
             if (output_tokens.size() > max_output_tokens_size) {
             max_output_tokens_size = output_tokens.size();
@@ -205,12 +201,13 @@ torch::Tensor beam_decode_with_given_state(at::Tensor th_probs,
         }
         }
     
-    torch::Tensor tensor = torch::randint(1, {batch_results.size(), max_result_size, max_output_tokens_size});
+    torch::Tensor output_tokens_tensor = torch::randint(1, {batch_results.size(), max_result_size, max_output_tokens_size});
+    torch::Tensor output_timesteps_tensor = torch::randint(1, {batch_results.size(), max_result_size, max_output_tokens_size});
+
     // cout << batch_results.size() << endl;
     // cout << max_result_size << endl; 
     // cout << max_output_tokens_size << endl; 
 
-    auto timesteps_accessor =  th_timesteps.accessor<int, 3>();
     auto scores_accessor =  th_scores.accessor<float, 2>();
     auto out_length_accessor =  th_out_length.accessor<int, 2>();
 
@@ -230,20 +227,8 @@ torch::Tensor beam_decode_with_given_state(at::Tensor th_probs,
             std::vector<int> output_tokens = output.tokens;
             std::vector<int> output_timesteps = output.timesteps;
             for (int t = 0; t < output_tokens.size(); ++t) {
-                if (t < tensor.size(2)) {
-                    tensor[b][p][t] =  output_tokens[t]; // fill output tokens
-                }
-                // else {
-                //     std::cerr << "Unsupported size: t >= tensor.size(2)\n";
-                // }
-
-                if  (t < timesteps_accessor.size(2)) {
-                    timesteps_accessor[b][p][t] = output_timesteps[t];
-                }
-                // TODO: понять, почему
-                // else {
-                //     std::cout << "Unsupported size: t >= timesteps_accessor.size(2)\n";
-                // }
+                output_tokens_tensor[b][p][t] =  output_tokens[t]; // fill output tokens
+                output_timesteps_tensor[b][p][t] = output_timesteps[t];
             }
             scores_accessor[b][p] = n_path_result.first;
             out_length_accessor[b][p] = output_tokens.size();
@@ -252,22 +237,19 @@ torch::Tensor beam_decode_with_given_state(at::Tensor th_probs,
 
     // torch::Tensor int_tensor = tensor.to(torch::kInt32);
 
-    return tensor;
+    return {output_tokens_tensor, output_timesteps_tensor};
 }
 
 
-torch::Tensor paddle_beam_decode_with_given_state(at::Tensor th_probs,
+std::pair<torch::Tensor, torch::Tensor> paddle_beam_decode_with_given_state(at::Tensor th_probs,
                           at::Tensor th_seq_lens,
                           size_t num_processes,
                           std::vector<void*> states,
                           std::vector<bool> is_eos_s,
-                          at::Tensor th_output,
-                          at::Tensor th_timesteps,
                           at::Tensor th_scores,
                           at::Tensor th_out_length){
 
-    return beam_decode_with_given_state(th_probs, th_seq_lens, num_processes, states,is_eos_s, 
-    th_output, th_timesteps, th_scores, th_out_length);
+    return beam_decode_with_given_state(th_probs, th_seq_lens, num_processes, states,is_eos_s, th_scores, th_out_length);
 }
 
 
