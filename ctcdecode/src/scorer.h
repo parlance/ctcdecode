@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <map>
 
 #include "lm/enumerate_vocab.hh"
 #include "lm/virtual_interface.hh"
@@ -46,9 +47,9 @@ public:
          const std::vector<std::string> &vocabulary);
   ~Scorer();
 
-  double get_log_cond_prob(const std::vector<std::string> &words);
+  double get_log_cond_prob(const std::vector<std::string> &words, const std::map<std::string, std::string> &funnels);
 
-  double get_sent_log_prob(const std::vector<std::string> &words);
+  double get_sent_log_prob(const std::vector<std::string> &words, const std::map<std::string, std::string> &funnels);
 
   // return the max order
   size_t get_max_order() const { return max_order_; }
@@ -77,6 +78,9 @@ public:
   // pointer to the dictionary of FST
   void *dictionary;
 
+  // char map
+  std::unordered_map<std::string, int> char_map_;
+
 protected:
   // necessary setup: load language model, set char map, fill FST's dictionary
   void setup(const std::string &lm_path,
@@ -91,7 +95,7 @@ protected:
   // set char map
   void set_char_map(const std::vector<std::string> &char_list);
 
-  double get_log_prob(const std::vector<std::string> &words);
+  double get_log_prob(const std::vector<std::string> &words, const std::map<std::string, std::string> &funnels);
 
   // translate the vector in index to string
   std::string vec2str(const std::vector<int> &input);
@@ -104,7 +108,7 @@ private:
 
   int SPACE_ID_;
   std::vector<std::string> char_list_;
-  std::unordered_map<std::string, int> char_map_;
+  // std::unordered_map<std::string, int> char_map_;
 
   std::vector<std::string> vocabulary_;
 };

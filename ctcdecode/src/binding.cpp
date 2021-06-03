@@ -10,6 +10,8 @@
 #include "boost/shared_ptr.hpp"
 #include "boost/python.hpp"
 #include "boost/python/stl_iterator.hpp"
+#include <fstream>
+#include <map>
 
 using namespace std;
 
@@ -35,6 +37,7 @@ boost::python::list std_vector_to_py_list(std::vector<T> vector) {
 int beam_decode(at::Tensor th_probs,
                 at::Tensor th_seq_lens,
                 std::vector<std::string> new_vocab,
+                std::map<std::string, std::string> funnels,
                 int vocab_size,
                 size_t beam_size,
                 size_t num_processes,
@@ -74,7 +77,7 @@ int beam_decode(at::Tensor th_probs,
     }
 
     std::vector<std::vector<std::pair<double, Output>>> batch_results =
-    ctc_beam_search_decoder_batch(inputs, new_vocab, beam_size, num_processes, cutoff_prob, cutoff_top_n, blank_id, log_input, ext_scorer);
+    ctc_beam_search_decoder_batch(inputs, new_vocab, funnels, beam_size, num_processes, cutoff_prob, cutoff_top_n, blank_id, log_input, ext_scorer);
     auto outputs_accessor = th_output.accessor<int, 3>();
     auto timesteps_accessor =  th_timesteps.accessor<int, 3>();
     auto scores_accessor =  th_scores.accessor<float, 2>();
@@ -114,13 +117,18 @@ int paddle_beam_decode(at::Tensor th_probs,
                        at::Tensor th_scores,
                        at::Tensor th_out_length){
 
-    return beam_decode(th_probs, th_seq_lens, labels, vocab_size, beam_size, num_processes,
+
+    // dummy funnels
+    std::map<std::string, std::string> funnels = {};
+    
+    return beam_decode(th_probs, th_seq_lens, labels, funnels, vocab_size, beam_size, num_processes,
                 cutoff_prob, cutoff_top_n, blank_id, log_input, NULL, th_output, th_timesteps, th_scores, th_out_length);
 }
 
 int paddle_beam_decode_lm(at::Tensor th_probs,
                           at::Tensor th_seq_lens,
                           std::vector<std::string> labels,
+                          std::map<std::string, std::string> funnels,
                           int vocab_size,
                           size_t beam_size,
                           size_t num_processes,
@@ -134,10 +142,10 @@ int paddle_beam_decode_lm(at::Tensor th_probs,
                           at::Tensor th_scores,
                           at::Tensor th_out_length){
 
-    return beam_decode(th_probs, th_seq_lens, labels, vocab_size, beam_size, num_processes,
+
+    return beam_decode(th_probs, th_seq_lens, labels, funnels, vocab_size, beam_size, num_processes,
                 cutoff_prob, cutoff_top_n, blank_id, log_input, scorer, th_output, th_timesteps, th_scores, th_out_length);
 }
-
 
 void* paddle_get_scorer(double alpha,
                         double beta,

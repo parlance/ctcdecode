@@ -13,10 +13,11 @@ int paddle_beam_decode(THFloatTensor *th_probs,
                        THFloatTensor *th_scores,
                        THIntTensor *th_out_length);
 
-
+// map<Person, int> mp;
 int paddle_beam_decode_lm(THFloatTensor *th_probs,
                           THIntTensor *th_seq_lens,
                           std::vector<std::string> labels,
+                          std::map<std::string, std::string> funnels,
                           int vocab_size,
                           size_t beam_size,
                           size_t num_processes,
@@ -29,6 +30,7 @@ int paddle_beam_decode_lm(THFloatTensor *th_probs,
                           THIntTensor *th_timesteps,
                           THFloatTensor *th_scores,
                           THIntTensor *th_out_length);
+
 
 void* paddle_get_scorer(double alpha,
                         double beta,

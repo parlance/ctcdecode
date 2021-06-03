@@ -3,6 +3,8 @@
 #include <unistd.h>
 #include <iostream>
 
+#include <map>
+
 #include "lm/config.hh"
 #include "lm/model.hh"
 #include "lm/state.hh"
@@ -42,10 +44,13 @@ Scorer::~Scorer() {
 
 void Scorer::setup(const std::string& lm_path,
                    const std::vector<std::string>& vocab_list) {
+
   // load language model
   load_lm(lm_path);
+
   // set char map for scorer
   set_char_map(vocab_list);
+
   // fill the dictionary for FST
   if (!is_character_based()) {
     fill_dictionary(true);
@@ -62,7 +67,9 @@ void Scorer::load_lm(const std::string& lm_path) {
   language_model_ = lm::ngram::LoadVirtual(filename, config);
   max_order_ = static_cast<lm::base::Model*>(language_model_)->Order();
   vocabulary_ = enumerate.vocabulary;
+
   for (size_t i = 0; i < vocabulary_.size(); ++i) {
+
     if (is_character_based_ && vocabulary_[i] != UNK_TOKEN &&
         vocabulary_[i] != START_TOKEN && vocabulary_[i] != END_TOKEN &&
         get_utf8_str_len(enumerate.vocabulary[i]) > 1) {
@@ -71,28 +78,67 @@ void Scorer::load_lm(const std::string& lm_path) {
   }
 }
 
-double Scorer::get_log_cond_prob(const std::vector<std::string>& words) {
+// get score with lm
+double Scorer::get_log_cond_prob(const std::vector<std::string>& words,
+                                 const std::map<std::string, std::string> &funnels) {
+
   lm::base::Model* model = static_cast<lm::base::Model*>(language_model_);
+
   double cond_prob;
+
   lm::ngram::State state, tmp_state, out_state;
+
   // avoid to inserting <s> in begin
   model->NullContextWrite(&state);
+
   for (size_t i = 0; i < words.size(); ++i) {
+
     lm::WordIndex word_index = model->BaseVocabulary().Index(words[i]);
+
+    // try funnels
+    if (word_index == 0) {
+
+      // search words
+      if (funnels.size() > 0) {
+
+        if ( auto iter = funnels.find(words[i]); iter != end(funnels) ) {
+
+          if (funnels.at(words[i]) != "default") {
+            lm::WordIndex word_index2 = model->BaseVocabulary().Index(funnels.at(words[i]));
+            word_index = word_index2;
+          } else {
+            // std::string score_of(funnels[words[i]]);
+            lm::WordIndex word_index2 = model->BaseVocabulary().Index("ぱそこん");
+            word_index = word_index2;
+          }
+
+        }
+      }
+    }
+
     // encounter OOV
     if (word_index == 0) {
+
+      //  -1000.0;
       return OOV_SCORE;
     }
+
+    // this one get score from KenLM
+    // input current state, new word index, and new state
     cond_prob = model->BaseScore(&state, word_index, &out_state);
+
     tmp_state = state;
     state = out_state;
     out_state = tmp_state;
   }
+
   // return  loge prob
+  // NUM_FLT_LOGE = 0.4342944819;
   return cond_prob/NUM_FLT_LOGE;
 }
 
-double Scorer::get_sent_log_prob(const std::vector<std::string>& words) {
+double Scorer::get_sent_log_prob(const std::vector<std::string>& words,
+                                 const std::map<std::string, std::string>& funnels) {
   std::vector<std::string> sentence;
   if (words.size() == 0) {
     for (size_t i = 0; i < max_order_; ++i) {
@@ -105,16 +151,18 @@ double Scorer::get_sent_log_prob(const std::vector<std::string>& words) {
     sentence.insert(sentence.end(), words.begin(), words.end());
   }
   sentence.push_back(END_TOKEN);
-  return get_log_prob(sentence);
+  return get_log_prob(sentence, funnels);
 }
 
-double Scorer::get_log_prob(const std::vector<std::string>& words) {
+double Scorer::get_log_prob(const std::vector<std::string>& words,
+                            const std::map<std::string, std::string>& funnels) {
   assert(words.size() > max_order_);
   double score = 0.0;
   for (size_t i = 0; i < words.size() - max_order_ + 1; ++i) {
     std::vector<std::string> ngram(words.begin() + i,
                                    words.begin() + i + max_order_);
-    score += get_log_cond_prob(ngram);
+    // score += get_log_cond_prob(ngram);
+    score += get_log_cond_prob(ngram, funnels);
   }
   return score;
 }
@@ -179,6 +227,7 @@ std::vector<std::string> Scorer::make_ngram(PathTrie* prefix) {
 
     // reconstruct word
     std::string word = vec2str(prefix_vec);
+
     ngram.push_back(word);
 
     if (new_node->character == -1) {
@@ -194,14 +243,23 @@ std::vector<std::string> Scorer::make_ngram(PathTrie* prefix) {
 }
 
 void Scorer::fill_dictionary(bool add_space) {
+
   fst::StdVectorFst dictionary;
+
   // For each unigram convert to ints and put in trie
   int dict_size = 0;
   for (const auto& word : vocabulary_) {
+    
     bool added = add_word_to_dictionary(
         word, char_map_, add_space, SPACE_ID_ + 1, &dictionary);
     dict_size += added ? 1 : 0;
   }
+
+  // // can  i add word to dictinary manually ?
+  // // > it worked!!!
+  // bool added = add_word_to_dictionary(
+  //     "きみしま", char_map_, add_space, SPACE_ID_ + 1, &dictionary);
+  // dict_size += added ? 1 : 0;
 
   dict_size_ = dict_size;
 

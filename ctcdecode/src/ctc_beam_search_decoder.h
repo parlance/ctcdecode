@@ -4,6 +4,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <map>
 
 #include "scorer.h"
 #include "output.h"
@@ -28,11 +29,13 @@
 std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
     const std::vector<std::vector<double>> &probs_seq,
     const std::vector<std::string> &vocabulary,
+    const std::map<std::string, std::string> &funnels,
     size_t beam_size,
     double cutoff_prob = 1.0,
     size_t cutoff_top_n = 40,
     size_t blank_id = 0,
     int log_input = 0,
+    int foo = 0,
     Scorer *ext_scorer = nullptr);
 
 /* CTC Beam Search Decoder for batch data
@@ -56,6 +59,7 @@ std::vector<std::vector<std::pair<double, Output>>>
 ctc_beam_search_decoder_batch(
     const std::vector<std::vector<std::vector<double>>> &probs_split,
     const std::vector<std::string> &vocabulary,
+    const std::map<std::string, std::string> &funnels,
     size_t beam_size,
     size_t num_processes,
     double cutoff_prob = 1.0,
@@ -74,6 +78,7 @@ class DecoderState
   size_t blank_id;
   int log_input;
   std::vector<std::string> vocabulary;
+  std::map<std::string, std::string> funnels;
   Scorer *ext_scorer;
 
   std::vector<PathTrie*> prefixes;
@@ -92,6 +97,7 @@ public:
    *                 Default null, decoding the input sample without scorer.
   */
   DecoderState(const std::vector<std::string> &vocabulary,
+               const std::map<std::string, std::string> &funnels,
                size_t beam_size,
                double cutoff_prob,
                size_t cutoff_top_n,

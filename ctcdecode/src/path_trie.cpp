@@ -5,6 +5,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <map>
 
 #include "decoder_utils.h"
 
@@ -27,6 +28,18 @@ PathTrie::PathTrie() {
   has_dictionary_ = false;
 
   matcher_ = nullptr;
+
+  has_mini_dictionary_ = false;
+  mini_dictionary_ = nullptr;
+  mini_dictionary_state_ = 0;
+  mini_matcher_ = nullptr;
+
+  // vocab_tmp = {
+  //   "aaa", "bbb", "ccc"
+  // };
+  vocab_tmp = {
+    "_", "ー", "あ", "い", "う", "え", "お", "か", "き", "く", "け", "こ", "さ", "し", "す", "せ", "そ", "た", "ち", "つ", "て", "と", "な", "に", "ぬ", "ね", "の", "は", "ひ", "ふ", "へ", "ほ", "ま", "み", "む", "め", "も", "や", "ゆ", "よ", "ら", "り", "る", "れ", "ろ", "わ", "を", "ん", "ぁ", "ぃ", "ぅ", "ぇ", "ぉ", "ゃ", "ゅ", "ょ", "ゎ", "っ", "が", "ぎ", "ぐ", "げ", "ご", "ざ", "じ", "ず", "ぜ", "ぞ", "だ", "ぢ", "づ", "で", "ど", "ば", "び", "ぶ", "べ", "ぼ", "ぱ", "ぴ", "ぷ", "ぺ", "ぽ", "ゔ", " "
+  };
 }
 
 PathTrie::~PathTrie() {
@@ -35,13 +48,14 @@ PathTrie::~PathTrie() {
   }
 }
 
+// actually create and keep adding new trie nodes.
 PathTrie* PathTrie::get_path_trie(int new_char, int new_timestep, float cur_log_prob_c, bool reset) {
   auto child = children_.begin();
   for (child = children_.begin(); child != children_.end(); ++child) {
     if (child->first == new_char) {
       if (child->second->log_prob_c < cur_log_prob_c) {
-	child->second->log_prob_c = cur_log_prob_c;
-	child->second->timestep = new_timestep;
+        child->second->log_prob_c = cur_log_prob_c;
+        child->second->timestep = new_timestep;
       }
       break;
     }
@@ -56,44 +70,143 @@ PathTrie* PathTrie::get_path_trie(int new_char, int new_timestep, float cur_log_
     }
     return (child->second);
   } else {
+
     if (has_dictionary_) {
-      matcher_->SetState(dictionary_state_);
-      bool found = matcher_->Find(new_char + 1);
-      if (!found) {
-        // Adding this character causes word outside dictionary
-        auto FSTZERO = fst::TropicalWeight::Zero();
-        auto final_weight = dictionary_->Final(dictionary_state_);
-        bool is_final = (final_weight != FSTZERO);
-        if (is_final && reset) {
-          dictionary_state_ = dictionary_->Start();
-        }
-        return nullptr;
-      } else {
-        PathTrie* new_path = new PathTrie;
-        new_path->character = new_char;
-        new_path->timestep = new_timestep;
-        new_path->parent = this;
-        new_path->dictionary_ = dictionary_;
-        new_path->has_dictionary_ = true;
-        new_path->matcher_ = matcher_;
-	new_path->log_prob_c = cur_log_prob_c;
 
-        // set spell checker state
-        // check to see if next state is final
-        auto FSTZERO = fst::TropicalWeight::Zero();
-        auto final_weight = dictionary_->Final(matcher_->Value().nextstate);
-        bool is_final = (final_weight != FSTZERO);
-        if (is_final && reset) {
-	  // restart spell checker at the start state
-          new_path->dictionary_state_ = dictionary_->Start();
+      if (has_mini_dictionary_){
+
+        // both base and mini dictinary
+
+        // evaluate dictonary and mini-dictonary one by one
+
+        // evaluate with base dictionary
+        matcher_->SetState(dictionary_state_);
+        bool found = matcher_->Find(new_char + 1);
+
+        // evaluate with mini dictionary
+        mini_matcher_->SetState(mini_dictionary_state_);
+        bool found_min = mini_matcher_->Find(new_char + 1);
+
+        if (!found) {
+          // Adding this character causes word outside dictionary
+          auto FSTZERO = fst::TropicalWeight::Zero();
+          auto final_weight = dictionary_->Final(dictionary_state_);
+          bool is_final = (final_weight != FSTZERO);
+          if (is_final && reset) {
+            dictionary_state_ = dictionary_->Start();
+          }
+        }
+
+        if (!found_min) {
+          // Adding this character causes word outside dictionary
+          auto FSTZERO = fst::TropicalWeight::Zero();
+          auto final_weight = mini_dictionary_->Final(mini_dictionary_state_);
+          bool is_final = (final_weight != FSTZERO);
+          if (is_final && reset) {
+            mini_dictionary_state_ = mini_dictionary_->Start();
+          }
+        }
+
+        // not found at all both in base and mini dictionary
+        if (!found && !found_min) {
+
+          return nullptr;
+
         } else {
-	  // go to next state
-          new_path->dictionary_state_ = matcher_->Value().nextstate;
+
+          PathTrie* new_path = new PathTrie;
+          new_path->character = new_char;
+          new_path->timestep = new_timestep;
+          new_path->parent = this;
+          new_path->dictionary_ = dictionary_;
+          new_path->has_dictionary_ = true;
+          new_path->matcher_ = matcher_;
+          new_path->log_prob_c = cur_log_prob_c;
+          // funnels
+          new_path->mini_dictionary_ = mini_dictionary_;
+          new_path->has_mini_dictionary_ = true;
+          new_path->mini_matcher_ = mini_matcher_;
+
+          if (found) {
+            // set spell checker state
+            // check to see if next state is final
+            auto FSTZERO = fst::TropicalWeight::Zero();
+            auto final_weight = dictionary_->Final(matcher_->Value().nextstate);
+            bool is_final = (final_weight != FSTZERO);
+            if (is_final && reset) {
+               // restart spell checker at the start state
+              new_path->dictionary_state_ = dictionary_->Start();
+            } else {
+               // go to next state
+              new_path->dictionary_state_ = matcher_->Value().nextstate;
+            }
+          }
+
+          if (found_min) {
+            auto FSTZERO = fst::TropicalWeight::Zero();
+            auto final_weight_mini = mini_dictionary_->Final(mini_matcher_->Value().nextstate);
+            bool is_final_mini = (final_weight_mini != FSTZERO);
+            if (is_final_mini && reset) {
+               // restart spell checker at the start state
+              new_path->mini_dictionary_state_ = mini_dictionary_->Start();
+            } else {
+               // go to next state
+              new_path->mini_dictionary_state_ = mini_matcher_->Value().nextstate;
+            }
+          }
+
+          // new trie node and return
+          children_.push_back(std::make_pair(new_char, new_path));
+          return new_path;
         }
 
-        children_.push_back(std::make_pair(new_char, new_path));
-        return new_path;
+      } else {
+
+        // base dictionar only
+
+        matcher_->SetState(dictionary_state_);
+        bool found = matcher_->Find(new_char + 1);
+        if (!found) {
+          // Adding this character causes word outside dictionary
+          auto FSTZERO = fst::TropicalWeight::Zero();
+          auto final_weight = dictionary_->Final(dictionary_state_);
+          bool is_final = (final_weight != FSTZERO);
+          if (is_final && reset) {
+            dictionary_state_ = dictionary_->Start();
+          }
+          return nullptr;
+
+        } else {
+
+          PathTrie* new_path = new PathTrie;
+          new_path->character = new_char;
+          new_path->timestep = new_timestep;
+          new_path->parent = this;
+          new_path->dictionary_ = dictionary_;
+          new_path->has_dictionary_ = true;
+          new_path->matcher_ = matcher_;
+          new_path->log_prob_c = cur_log_prob_c;
+
+          // set spell checker state
+          // check to see if next state is final
+          auto FSTZERO = fst::TropicalWeight::Zero();
+          auto final_weight = dictionary_->Final(matcher_->Value().nextstate);
+          bool is_final = (final_weight != FSTZERO);
+          if (is_final && reset) {
+  	         // restart spell checker at the start state
+            new_path->dictionary_state_ = dictionary_->Start();
+          } else {
+  	         // go to next state
+            new_path->dictionary_state_ = matcher_->Value().nextstate;
+          }
+
+          children_.push_back(std::make_pair(new_char, new_path));
+          return new_path;
+
+        }
+
       }
+
     } else {
       PathTrie* new_path = new PathTrie;
       new_path->character = new_char;
@@ -114,6 +227,7 @@ PathTrie* PathTrie::get_path_vec(std::vector<int>& output,
                                  std::vector<int>& timesteps,
                                  int stop,
                                  size_t max_steps) {
+
   if (character == stop || character == ROOT_ || output.size() == max_steps) {
     std::reverse(output.begin(), output.end());
     std::reverse(timesteps.begin(), timesteps.end());
@@ -126,6 +240,7 @@ PathTrie* PathTrie::get_path_vec(std::vector<int>& output,
 }
 
 void PathTrie::iterate_to_vec(std::vector<PathTrie*>& output) {
+
   if (exists_) {
     log_prob_b_prev = log_prob_b_cur;
     log_prob_nb_prev = log_prob_nb_cur;
@@ -134,9 +249,12 @@ void PathTrie::iterate_to_vec(std::vector<PathTrie*>& output) {
     log_prob_nb_cur = -NUM_FLT_INF;
 
     score = log_sum_exp(log_prob_b_prev, log_prob_nb_prev);
+
     output.push_back(this);
   }
+
   for (auto child : children_) {
+
     child.second->iterate_to_vec(output);
   }
 }
@@ -172,3 +290,61 @@ using FSTMATCH = fst::SortedMatcher<fst::StdVectorFst>;
 void PathTrie::set_matcher(std::shared_ptr<FSTMATCH> matcher) {
   matcher_ = matcher;
 }
+
+/// funnels
+
+// create mini dictionary
+// copy from "void Scorer::fill_dictionary(bool add_space);"
+double PathTrie::create_mini_dictionary(const std::map<std::string, std::string> &funnels,
+                                      std::unordered_map<std::string, int> char_map_,
+                                      int space_id,
+                                      bool add_space) {
+
+  fst::StdVectorFst dictionary;
+
+  // For each unigram convert to ints and put in trie
+  // int dict_size = 0;
+
+  for (const auto& [key, value] : funnels){
+
+    // why we need to add 1 to space_id ?
+    bool added = add_word_to_dictionary(
+        key, char_map_, add_space, space_id + 1, &dictionary);
+  }
+
+
+  /* Simplify FST
+
+   * This gets rid of "epsilon" transitions in the FST.
+   * These are transitions that don't require a string input to be taken.
+   * Getting rid of them is necessary to make the FST determinisitc, but
+   * can greatly increase the size of the FST
+   */
+  fst::RmEpsilon(&dictionary);
+  fst::StdVectorFst* new_dict = new fst::StdVectorFst;
+
+  /* This makes the FST deterministic, meaning for any string input there's
+   * only one possible state the FST could be in.  It is assumed our
+   * dictionary is deterministic when using it.
+   * (lest we'd have to check for multiple transitions at each state)
+   */
+  fst::Determinize(dictionary, new_dict);
+
+  /* Finds the simplest equivalent fst. This is unnecessary but decreases
+   * memory usage of the dictionary
+   */
+  fst::Minimize(new_dict);
+  // this->dictionary = new_dict;
+
+  mini_dictionary_ = new_dict;
+  mini_dictionary_state_ = mini_dictionary_->Start();
+  has_mini_dictionary_ = true;
+
+  // setup matcher
+  auto mini_matcher = std::make_shared<FSTMATCH>(mini_dictionary_, fst::MATCH_INPUT);
+  mini_matcher_ = mini_matcher;
+}
+
+// void PathTrie::set_mini_matcher(std::shared_ptr<FSTMATCH> matcher) {
+//   mini_matcher_ = matcher;
+// }

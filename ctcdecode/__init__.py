@@ -17,7 +17,7 @@ class CTCBeamDecoder(object):
         cutoff_prob (float): Cutoff probability in pruning. 1.0 means no pruning.
         beam_width (int): This controls how broad the beam search is. Higher values are more likely to find top beams,
                             but they also will make your beam search exponentially slower.
-        num_processes (int): Parallelize the batch using num_processes workers. 
+        num_processes (int): Parallelize the batch using num_processes workers.
         blank_id (int): Index of the CTC blank token (probably 0) used when training your model.
         log_probs_input (bool): False if your model has passed through a softmax and output probabilities sum to 1.
     """
@@ -37,7 +37,7 @@ class CTCBeamDecoder(object):
                                                         self._num_labels)
         self._cutoff_prob = cutoff_prob
 
-    def decode(self, probs, seq_lens=None):
+    def decode(self, probs, seq_lens=None, funnels={}):
         """
         Conducts the beamsearch on model outputs and return results.
         Args:
@@ -67,14 +67,28 @@ class CTCBeamDecoder(object):
             seq_lens = torch.IntTensor(batch_size).fill_(max_seq_len)
         else:
             seq_lens = seq_lens.cpu().int()
+
         output = torch.IntTensor(batch_size, self._beam_width, max_seq_len).cpu().int()
         timesteps = torch.IntTensor(batch_size, self._beam_width, max_seq_len).cpu().int()
         scores = torch.FloatTensor(batch_size, self._beam_width).cpu().float()
         out_seq_len = torch.zeros(batch_size, self._beam_width).cpu().int()
         if self._scorer:
-            ctc_decode.paddle_beam_decode_lm(probs, seq_lens, self._labels, self._num_labels, self._beam_width,
-                                             self._num_processes, self._cutoff_prob, self.cutoff_top_n, self._blank_id,
-                                             self._log_probs, self._scorer, output, timesteps, scores, out_seq_len)
+            ctc_decode.paddle_beam_decode_lm(probs,
+                                             seq_lens,
+                                             self._labels,
+                                             funnels,
+                                             self._num_labels,
+                                             self._beam_width,
+                                             self._num_processes,
+                                             self._cutoff_prob,
+                                             self.cutoff_top_n,
+                                             self._blank_id,
+                                             self._log_probs,
+                                             self._scorer,
+                                             output,
+                                             timesteps,
+                                             scores,
+                                             out_seq_len)
         else:
             ctc_decode.paddle_beam_decode(probs, seq_lens, self._labels, self._num_labels, self._beam_width,
                                           self._num_processes,
