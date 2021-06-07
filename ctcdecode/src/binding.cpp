@@ -204,19 +204,9 @@ std::pair<torch::Tensor, torch::Tensor> beam_decode_with_given_state(at::Tensor 
     torch::Tensor output_tokens_tensor = torch::randint(1, {batch_results.size(), max_result_size, max_output_tokens_size});
     torch::Tensor output_timesteps_tensor = torch::randint(1, {batch_results.size(), max_result_size, max_output_tokens_size});
 
-    // cout << batch_results.size() << endl;
-    // cout << max_result_size << endl; 
-    // cout << max_output_tokens_size << endl; 
 
     auto scores_accessor =  th_scores.accessor<float, 2>();
     auto out_length_accessor =  th_out_length.accessor<int, 2>();
-
-    // for (size_t i = 0; i < states.size(); ++i) {
-    //     if (is_eos_s[i] && states[i] != nullptr) {
-    //         delete static_cast<DecoderState *>(states[i]);
-    //         states[i] = nullptr;
-    //     }
-    // }
 
 
     for (int b = 0; b < batch_results.size(); ++b){
@@ -234,8 +224,6 @@ std::pair<torch::Tensor, torch::Tensor> beam_decode_with_given_state(at::Tensor 
             out_length_accessor[b][p] = output_tokens.size();
         }
     }
-
-    // torch::Tensor int_tensor = tensor.to(torch::kInt32);
 
     return {output_tokens_tensor, output_timesteps_tensor};
 }
