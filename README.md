@@ -64,6 +64,36 @@ beam_results, beam_scores, timesteps, out_lens = decoder.decode(output)
  1. `timesteps` - Shape: BATCHSIZE x N_BEAMS The timestep at which the nth output character has peak probability. Can be used as alignment between the audio and the transcript.
  1. `out_lens` - Shape: BATCHSIZE x N_BEAMS. `out_lens[i][j]` is the length of the jth beam_result, of item i of your batch. 
 
+### Online decoding
+
+```python
+from ctcdecode import OnlineCTCBeamDecoder
+
+decoder = OnlineCTCBeamDecoder(
+    labels,
+    model_path=None,
+    alpha=0,
+    beta=0,
+    cutoff_top_n=40,
+    cutoff_prob=1.0,
+    beam_width=100,
+    num_processes=4,
+    blank_id=0,
+    log_probs_input=False
+)
+
+state1 = ctcdecode.DecoderState(decoder)
+
+probs_seq = torch.FloatTensor([probs_seq])
+beam_results, beam_scores, timesteps, out_seq_len = decoder.decode(probs_seq[:, :2], [state1], [False])
+beam_results, beam_scores, timesteps, out_seq_len = decoder.decode(probs_seq[:, 2:], [state1], [True])
+
+```
+
+The Online decoder is copying CTCBeamDecoder interface, but it requires states and is_eos_s sequences. 
+
+States are used to accumulate sequences of chunks, each corresponding to one data source. Is_eos_s tells the decoder whether the chunks have stopped being pushed to the corresponding state.
+
  ### More examples
 
 Get the top beam for the first item in your batch
