@@ -40,7 +40,7 @@ beam_results, beam_scores, timesteps, out_lens = decoder.decode(output)
 ### Inputs to `CTCBeamDecoder`
  - `labels` are the tokens you used to train your model. They should be in the same order as your outputs. For example
  if your tokens are the english letters and you used 0 as your blank token, then you would
- pass in list("_abcdefghijklmopqrstuvwxyz") as your argument to labels
+ pass in `list("_abcdefghijklmnopqrstuvwxyz")` as your argument to labels
  - `model_path` is the path to your external kenlm language model(LM). Default is none.
  - `alpha` Weighting associated with the LMs probabilities. A weight of 0 means the LM has no effect.
  - `beta` Weight associated with the number of words within our beam.
@@ -59,7 +59,7 @@ beam_results, beam_scores, timesteps, out_lens = decoder.decode(output)
 ### Outputs from the `decode` method
 
 4 things get returned from `decode`
- 1. `beam_results` - Shape: BATCHSIZE x N_BEAMS X N_TIMESTEPS A batch containing the series of characters (these are ints, you still need to decode them back to your text) representing results from a given beam search. Note that the beams are almost always shorter than the total number of timesteps, and the additional data is non-sensical, so to see the top beam (as int labels) from the first item in the batch, you need to run `beam_results[0][0][:out_len[0][0]]`.
+ 1. `beam_results` - Shape: BATCHSIZE x N_BEAMS X N_TIMESTEPS A batch containing the series of characters (these are ints, you still need to decode them back to your text) representing results from a given beam search. Note that the beams are almost always shorter than the total number of timesteps, and the additional data is non-sensical, so to see the top beam (as int labels) from the first item in the batch, you need to run `beam_results[0][0][:out_lens[0][0]]`.
  1. `beam_scores` - Shape: BATCHSIZE x N_BEAMS A batch with the approximate CTC score of each beam (look at the code [here](https://github.com/parlance/ctcdecode/blob/master/ctcdecode/src/ctc_beam_search_decoder.cpp#L191-L192) for more info). If this is true, you can get the model's confidence that the beam is correct with `p=1/np.exp(beam_score)`.
  1. `timesteps` - Shape: BATCHSIZE x N_BEAMS The timestep at which the nth output character has peak probability. Can be used as alignment between the audio and the transcript.
  1. `out_lens` - Shape: BATCHSIZE x N_BEAMS. `out_lens[i][j]` is the length of the jth beam_result, of item i of your batch. 
@@ -97,16 +97,16 @@ States are used to accumulate sequences of chunks, each corresponding to one dat
  ### More examples
 
 Get the top beam for the first item in your batch
-`beam_results[0][0][:out_len[0][0]]`
+`beam_results[0][0][:out_lens[0][0]]`
 
 Get the top 50 beams for the first item in your batch
 ```python
 for i in range(50):
-     print(beam_results[0][i][:out_len[0][i]])
+     print(beam_results[0][i][:out_lens[0][i]])
 ```
 
 Note, these will be a list of ints that need decoding. You likely already have a function to decode from int to text, but if not you can do something like.
-`"".join[labels[n] for n in beam_results[0][0][:out_len[0][0]]]` using the labels you passed in to `CTCBeamDecoder`
+`"".join[labels[n] for n in beam_results[0][0][:out_lens[0][0]]]` using the labels you passed in to `CTCBeamDecoder`
 
 
 ## Resources
