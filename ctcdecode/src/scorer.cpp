@@ -95,6 +95,8 @@ double Scorer::get_log_cond_prob(const std::vector<std::string>& words,
 
     lm::WordIndex word_index = model->BaseVocabulary().Index(words[i]);
 
+    bool found_in_both = 0;
+
     // try funnels
     if (word_index == 0) {
 
@@ -104,14 +106,22 @@ double Scorer::get_log_cond_prob(const std::vector<std::string>& words,
         if ( auto iter = funnels.find(words[i]); iter != end(funnels) ) {
 
           if (funnels.at(words[i]) != "default") {
+
             lm::WordIndex word_index2 = model->BaseVocabulary().Index(funnels.at(words[i]));
             word_index = word_index2;
+
           } else {
             // std::string score_of(funnels[words[i]]);
             lm::WordIndex word_index2 = model->BaseVocabulary().Index("ぱそこん");
             word_index = word_index2;
           }
 
+        }
+      }
+    } else {
+      if (funnels.size() > 0) {
+        if ( auto iter = funnels.find(words[i]); iter != end(funnels) ) {
+          found_in_both = 1;
         }
       }
     }
@@ -130,6 +140,10 @@ double Scorer::get_log_cond_prob(const std::vector<std::string>& words,
     tmp_state = state;
     state = out_state;
     out_state = tmp_state;
+
+    if (found_in_both == true) {
+      cond_prob = cond_prob * 5;
+    }
   }
 
   // return  loge prob
@@ -249,7 +263,7 @@ void Scorer::fill_dictionary(bool add_space) {
   // For each unigram convert to ints and put in trie
   int dict_size = 0;
   for (const auto& word : vocabulary_) {
-    
+
     bool added = add_word_to_dictionary(
         word, char_map_, add_space, SPACE_ID_ + 1, &dictionary);
     dict_size += added ? 1 : 0;
