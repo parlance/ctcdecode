@@ -69,23 +69,47 @@ PathTrie* PathTrie::get_path_trie(int new_char, int new_timestep, float cur_log_
       child->second->log_prob_nb_cur = -NUM_FLT_INF;
     }
     return (child->second);
+
   } else {
 
     if (has_dictionary_) {
 
-      if (has_mini_dictionary_){
+      if (has_mini_dictionary_) {
 
         // both base and mini dictinary
 
+        // // show log
+        // std::ofstream ofs13334("/tmp/cpp_log.txt", std::ios::app);
+        // ofs13334 << "has_dictionary_ has_mini_dictionary_ : " << "  " << std::endl;
+        // ofs13334.close();
+
         // evaluate dictonary and mini-dictonary one by one
 
-        // evaluate with base dictionary
-        matcher_->SetState(dictionary_state_);
-        bool found = matcher_->Find(new_char + 1);
+        // evaluate with base dictionar
+        bool found = false;
+        if (base_dictionary_active == true) {
+          matcher_->SetState(dictionary_state_);
+          found = matcher_->Find(new_char + 1);
+        }
+        // matcher_->SetState(dictionary_state_);
+        // bool found = matcher_->Find(new_char + 1);
 
         // evaluate with mini dictionary
-        mini_matcher_->SetState(mini_dictionary_state_);
-        bool found_min = mini_matcher_->Find(new_char + 1);
+        bool found_min = false;
+        if (mini_dictionary_active == true) {
+
+          mini_matcher_->SetState(mini_dictionary_state_);
+          found_min = mini_matcher_->Find(new_char + 1);
+
+          // // show log
+          // if (found_min) {
+          //   std::ofstream ofs13334("/tmp/cpp_log.txt", std::ios::app);
+          //   ofs13334 << "found_min2 : " << found_min << " " << vocab_tmp[new_char] << std::endl;
+          //   ofs13334.close();
+          // }
+        }
+        // mini_matcher_->SetState(mini_dictionary_state_);
+        // bool found_min = mini_matcher_->Find(new_char + 1);
 
         if (!found) {
           // Adding this character causes word outside dictionary
@@ -107,7 +131,16 @@ PathTrie* PathTrie::get_path_trie(int new_char, int new_timestep, float cur_log_
           }
         }
 
+        // if (found_min) {
+        //
+        //   // show log
+        //   std::ofstream ofs13334("/tmp/cpp_log.txt", std::ios::app);
+        //   ofs13334 << "found_min TRUE : " << "  " << std::endl;
+        //   ofs13334.close();
+        // }
+
         // not found at all both in base and mini dictionary
+        // ここでnullptrを適切に返せないとぐちゃぐちゃと繋がった単語が出る。
         if (!found && !found_min) {
 
           return nullptr;
@@ -140,6 +173,10 @@ PathTrie* PathTrie::get_path_trie(int new_char, int new_timestep, float cur_log_
                // go to next state
               new_path->dictionary_state_ = matcher_->Value().nextstate;
             }
+
+            new_path->base_dictionary_active = true;
+          } else {
+            new_path->base_dictionary_active = false;
           }
 
           if (found_min) {
@@ -153,6 +190,10 @@ PathTrie* PathTrie::get_path_trie(int new_char, int new_timestep, float cur_log_
                // go to next state
               new_path->mini_dictionary_state_ = mini_matcher_->Value().nextstate;
             }
+            new_path->mini_dictionary_active = true;
+          } else {
+            // unfortunately if we set this false, we could not get funnel words!
+            new_path->mini_dictionary_active = true;
           }
 
           // new trie node and return
@@ -202,7 +243,6 @@ PathTrie* PathTrie::get_path_trie(int new_char, int new_timestep, float cur_log_
 
           children_.push_back(std::make_pair(new_char, new_path));
           return new_path;
-
         }
 
       }

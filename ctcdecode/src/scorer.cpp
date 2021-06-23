@@ -96,6 +96,7 @@ double Scorer::get_log_cond_prob(const std::vector<std::string>& words,
     lm::WordIndex word_index = model->BaseVocabulary().Index(words[i]);
 
     bool found_in_both = 0;
+    bool found_in_funnel = 0;
 
     // try funnels
     if (word_index == 0) {
@@ -104,6 +105,13 @@ double Scorer::get_log_cond_prob(const std::vector<std::string>& words,
       if (funnels.size() > 0) {
 
         if ( auto iter = funnels.find(words[i]); iter != end(funnels) ) {
+
+          // // show log
+          // std::ofstream ofs23334("/tmp/cpp_log.txt", std::ios::app);
+          // ofs23334 << "words00: " << words[i] << std::endl;
+          // ofs23334.close();
+
+          found_in_funnel = 1;
 
           if (funnels.at(words[i]) != "default") {
 
@@ -118,9 +126,16 @@ double Scorer::get_log_cond_prob(const std::vector<std::string>& words,
 
         }
       }
+
     } else {
       if (funnels.size() > 0) {
         if ( auto iter = funnels.find(words[i]); iter != end(funnels) ) {
+
+          // // show log
+          // std::ofstream ofs23334("/tmp/cpp_log.txt", std::ios::app);
+          // ofs23334 << "words2: " << words[i] << std::endl;
+          // ofs23334.close();
+
           found_in_both = 1;
         }
       }
@@ -141,8 +156,34 @@ double Scorer::get_log_cond_prob(const std::vector<std::string>& words,
     state = out_state;
     out_state = tmp_state;
 
+
+    // if (found_in_funnel == true) {
+    //
+    //   // show log
+    //   std::ofstream ofs23337("/tmp/cpp_log.txt", std::ios::app);
+    //   ofs23337 << "cond_prob: " << cond_prob << " " << words[i] << std::endl;
+    //   ofs23337.close();
+    // }
+
     if (found_in_both == true) {
-      cond_prob = cond_prob * 5;
+
+      // // show log
+      // std::ofstream ofs23335("/tmp/cpp_log.txt", std::ios::app);
+      // ofs23335 << "cond_prob1111: " << cond_prob << " " << words[i] << std::endl;
+      // ofs23335.close();
+
+      // 0.1 is just a number. you can experiment other numbers.
+      cond_prob = cond_prob * 0.1 + 1.0;
+
+    } else if (found_in_funnel == true) {
+
+      // // show log
+      // std::ofstream ofs23337("/tmp/cpp_log.txt", std::ios::app);
+      // ofs23337 << "cond_prob2222: " << cond_prob << " " << words[i] << std::endl;
+      // ofs23337.close();
+
+      cond_prob = cond_prob * 0.1 + 1.0;
+
     }
   }
 
@@ -258,6 +299,7 @@ std::vector<std::string> Scorer::make_ngram(PathTrie* prefix) {
 
 void Scorer::fill_dictionary(bool add_space) {
 
+  // http://www.openfst.org/twiki/bin/view/FST/FstQuickTour
   fst::StdVectorFst dictionary;
 
   // For each unigram convert to ints and put in trie
@@ -294,9 +336,38 @@ void Scorer::fill_dictionary(bool add_space) {
    */
   fst::Determinize(dictionary, new_dict);
 
+
+
+
+  // // can  i add word to dictinary manually ? HERE AFTER Determinize?
+  // // > it worked!!!
+  // bool added = add_word_to_dictionary(
+  //     "きみしま", char_map_, add_space, SPACE_ID_ + 1, &dictionary);
+  // dict_size += added ? 1 : 0;
+
+
+
+
   /* Finds the simplest equivalent fst. This is unnecessary but decreases
    * memory usage of the dictionary
    */
   fst::Minimize(new_dict);
+
+  // HOW ABOUT HERE???
+  // can  i add word to dictinary manually ? HERE AFTER Determinize?
+  // > it worked!!!
+  bool added = add_word_to_dictionary(
+      "きみしま", char_map_, add_space, SPACE_ID_ + 1, &dictionary);
+  dict_size += added ? 1 : 0;
+
+
+  bool added2 = add_word_to_dictionary(
+      "きみしま", char_map_, add_space, SPACE_ID_ + 1, &dictionary);
+  dict_size += added2 ? 1 : 0;
+
   this->dictionary = new_dict;
+
+  // not working...
+  // // fst::StdVectorFst* new_dict2 = dictionary
+  // this->dictionary = *dictionary;
 }

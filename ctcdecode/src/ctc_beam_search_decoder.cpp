@@ -152,7 +152,30 @@ DecoderState::next(const std::vector<std::vector<double>> &probs_seq)
 
         // おそらく、ここで、言語モデルの何かが使われ、マッチする場合は高めのスコア、マッチしない場合は低めのスコアになる！？
         // get new prefix
+
+        // debug show words
+        std::vector<int> output4;
+        std::vector<int> timesteps4;
+        prefix->get_path_vec(output4, timesteps4);
+        auto words4 = ext_scorer->split_labels(output4);
+        std::string words_str4;
+        for (string ss: words4) {
+          words_str4 += ss;
+          words_str4 += " ";
+        }
+
+        // // show log
+        // std::ofstream ofs13335("/tmp/cpp_log.txt", std::ios::app);
+        // ofs13335 << "words_str4: " << words_str4 << std::endl;
+        // ofs13335.close();
+
+        // get new prefix
         auto prefix_new = prefix->get_path_trie(c, abs_time_step, log_prob_c);
+
+
+
+
+
 
         if (prefix_new != nullptr) {
 
@@ -160,8 +183,12 @@ DecoderState::next(const std::vector<std::vector<double>> &probs_seq)
 
           if (c == prefix->character && prefix->log_prob_b_prev > -NUM_FLT_INF) {
             log_p = log_prob_c + prefix->log_prob_b_prev;
+
+
           } else if (c != prefix->character) {
             log_p = log_prob_c + prefix->score;
+
+
           }
 
           // language model scoring
@@ -183,8 +210,25 @@ DecoderState::next(const std::vector<std::vector<double>> &probs_seq)
             ngram = ext_scorer->make_ngram(prefix_to_score);
 
             score = ext_scorer->get_log_cond_prob(ngram, funnels) * ext_scorer->alpha;
+
+
+
+
+            // // show log
+            // std::ofstream ofs2338("/tmp/cpp_log.txt", std::ios::app);
+            // ofs2338 << "log_p0: " << log_p  << std::endl;
+
+
+
             log_p += score;
             log_p += ext_scorer->beta;
+
+            // ofs2338 << "score: " << score << std::endl;
+            // ofs2338 << "ext_scorer->beta: " << ext_scorer->beta  << std::endl;
+            // ofs2338 << "log_p1: " << log_p  << std::endl;
+            //
+            // ofs2338.close();
+
           }
 
           prefix_new->log_prob_nb_cur = log_sum_exp(prefix_new->log_prob_nb_cur, log_p);
@@ -200,9 +244,10 @@ DecoderState::next(const std::vector<std::vector<double>> &probs_seq)
           //   words_str0 += ss;
           //   words_str0 += " ";
           // }
-          // std::ofstream ofs3254("cpp_log.txt", std::ios::app);
+          // std::ofstream ofs3254("/tmp/cpp_log.txt", std::ios::app);
           // ofs3254 << "prefix: " << words_str0 << ", score: " << prefix->score << std::endl;
           // ofs3254 << "prefix: " << "  " << std::endl;
+          // ofs3254.close();
 
           // // 途中経過を表示
           // std::vector<int> output;
@@ -218,6 +263,11 @@ DecoderState::next(const std::vector<std::vector<double>> &probs_seq)
           // std::ofstream ofs3253("cpp_log.txt", std::ios::app);
           // ofs3253 << "prefix_new: " << words_str << ", score: " << prefix_new->score << std::endl;
           // ofs3253 << "prefix_new: " << "  " << std::endl;
+          // ofs3253.close();
+
+
+
+
         }
       }  // end of loop over prefix
     }    // end of loop over vocabulary
@@ -241,12 +291,12 @@ DecoderState::next(const std::vector<std::vector<double>> &probs_seq)
       prefixes.resize(beam_size);
     }
 
-    // // 途中経過を表示
+    // // show current words
     // std::vector<PathTrie*> prefixes_copy = prefixes;
     //
-    // std::ofstream ofs3334("cpp_log.txt", std::ios::app);
+    // std::ofstream ofs3334("/tmp/cpp_log.txt", std::ios::app);
     //
-    // for (size_t i = 0; i < beam_size && i < prefixes.size(); ++i) {
+    // for (size_t i = 0; i < beam_size && i < prefixes_copy.size(); ++i) {
     //
     //   std::vector<int> output;
     //   std::vector<int> timesteps;
@@ -263,7 +313,7 @@ DecoderState::next(const std::vector<std::vector<double>> &probs_seq)
     //   ofs3334 << "tmp all: " << words_str << ", i: " << i << std::endl;
     //   ofs3334 << "tmp all: " << "  " << std::endl;
     // }
-
+    // ofs3334.close();
 
 
 

@@ -93,6 +93,13 @@ private:
 
   // true if finding ars in mini dictionary FST
   std::shared_ptr<fst::SortedMatcher<fst::StdVectorFst>> mini_matcher_;
+
+  // base dictinary is still active
+  bool base_dictionary_active = true;
+
+  // mini dictionary is still active
+  bool mini_dictionary_active = true;
+
 };
 
 #endif  // PATH_TRIE_H
