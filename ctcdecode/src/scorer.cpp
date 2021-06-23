@@ -173,7 +173,7 @@ double Scorer::get_log_cond_prob(const std::vector<std::string>& words,
       // ofs23335.close();
 
       // 0.1 is just a number. you can experiment other numbers.
-      cond_prob = cond_prob * 0.1 + 1.0;
+      cond_prob = cond_prob * 0.1;
 
     } else if (found_in_funnel == true) {
 
@@ -182,7 +182,7 @@ double Scorer::get_log_cond_prob(const std::vector<std::string>& words,
       // ofs23337 << "cond_prob2222: " << cond_prob << " " << words[i] << std::endl;
       // ofs23337.close();
 
-      cond_prob = cond_prob * 0.1 + 1.0;
+      cond_prob = cond_prob * 0.05;
 
     }
   }
