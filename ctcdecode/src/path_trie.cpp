@@ -34,9 +34,7 @@ PathTrie::PathTrie() {
   mini_dictionary_state_ = 0;
   mini_matcher_ = nullptr;
 
-  // vocab_tmp = {
-  //   "aaa", "bbb", "ccc"
-  // };
+
   vocab_tmp = {
     "_", "ー", "あ", "い", "う", "え", "お", "か", "き", "く", "け", "こ", "さ", "し", "す", "せ", "そ", "た", "ち", "つ", "て", "と", "な", "に", "ぬ", "ね", "の", "は", "ひ", "ふ", "へ", "ほ", "ま", "み", "む", "め", "も", "や", "ゆ", "よ", "ら", "り", "る", "れ", "ろ", "わ", "を", "ん", "ぁ", "ぃ", "ぅ", "ぇ", "ぉ", "ゃ", "ゅ", "ょ", "ゎ", "っ", "が", "ぎ", "ぐ", "げ", "ご", "ざ", "じ", "ず", "ぜ", "ぞ", "だ", "ぢ", "づ", "で", "ど", "ば", "び", "ぶ", "べ", "ぼ", "ぱ", "ぴ", "ぷ", "ぺ", "ぽ", "ゔ", " "
   };
@@ -100,23 +98,22 @@ PathTrie* PathTrie::get_path_trie(int new_char, int new_timestep, float cur_log_
 
           mini_matcher_->SetState(mini_dictionary_state_);
           found_min = mini_matcher_->Find(new_char + 1);
-
-          // // show log
-          // if (found_min) {
-          //   std::ofstream ofs13334("/tmp/cpp_log.txt", std::ios::app);
-          //   ofs13334 << "found_min2 : " << found_min << " " << vocab_tmp[new_char] << std::endl;
-          //   ofs13334.close();
-          // }
         }
-        // mini_matcher_->SetState(mini_dictionary_state_);
-        // bool found_min = mini_matcher_->Find(new_char + 1);
 
         if (!found) {
+
           // Adding this character causes word outside dictionary
           auto FSTZERO = fst::TropicalWeight::Zero();
           auto final_weight = dictionary_->Final(dictionary_state_);
           bool is_final = (final_weight != FSTZERO);
           if (is_final && reset) {
+
+            // // WTF?! Nerver come here...
+            // // show log
+            // std::ofstream ofs13334("/tmp/cpp_log.txt", std::ios::app);
+            // ofs13334 << "dictionary_reset : " << "  " << std::endl;
+            // ofs13334.close();
+
             dictionary_state_ = dictionary_->Start();
           }
         }
@@ -127,7 +124,15 @@ PathTrie* PathTrie::get_path_trie(int new_char, int new_timestep, float cur_log_
           auto final_weight = mini_dictionary_->Final(mini_dictionary_state_);
           bool is_final = (final_weight != FSTZERO);
           if (is_final && reset) {
+
+            // // WTF?! Nerver come here...
+            // // show log
+            // std::ofstream ofs13335("/tmp/cpp_log.txt", std::ios::app);
+            // ofs13335 << "mini_dictionary_reset : " << "  " << std::endl;
+            // ofs13335.close();
+
             mini_dictionary_state_ = mini_dictionary_->Start();
+
           }
         }
 
@@ -167,15 +172,42 @@ PathTrie* PathTrie::get_path_trie(int new_char, int new_timestep, float cur_log_
             auto final_weight = dictionary_->Final(matcher_->Value().nextstate);
             bool is_final = (final_weight != FSTZERO);
             if (is_final && reset) {
-               // restart spell checker at the start state
+
+              // // show log
+              // std::ofstream ofs13345("/tmp/cpp_log.txt", std::ios::app);
+              // ofs13345 << "3.mini_dictionary_reset : " << vocab_tmp[new_char] << std::endl;
+              // ofs13345.close();
+
+              // restart spell checker at the start state
               new_path->dictionary_state_ = dictionary_->Start();
+
+              // new_path->base_dictionary_active = false;
+
             } else {
+
+
+              // // show log
+              // std::ofstream ofs13355("/tmp/cpp_log.txt", std::ios::app);
+              // ofs13355 << "3.mini_dictionary_continue : " << vocab_tmp[new_char] << std::endl;
+              // ofs13355.close();
+
+              // new_path->base_dictionary_active = true;
+
                // go to next state
               new_path->dictionary_state_ = matcher_->Value().nextstate;
             }
 
+
             new_path->base_dictionary_active = true;
+
+
           } else {
+
+            // // show log
+            // std::ofstream ofs13355("/tmp/cpp_log.txt", std::ios::app);
+            // ofs13355 << "1. kokoha?: " << std::endl;
+            // ofs13355.close();
+            // new_path->dictionary_state_ = dictionary_->Start();
             new_path->base_dictionary_active = false;
           }
 
@@ -184,16 +216,53 @@ PathTrie* PathTrie::get_path_trie(int new_char, int new_timestep, float cur_log_
             auto final_weight_mini = mini_dictionary_->Final(mini_matcher_->Value().nextstate);
             bool is_final_mini = (final_weight_mini != FSTZERO);
             if (is_final_mini && reset) {
-               // restart spell checker at the start state
+
+              //
+              // // show log
+              // std::ofstream ofs13346("/tmp/cpp_log.txt", std::ios::app);
+              // ofs13346 << "4.mini_dictionary_reset : " << vocab_tmp[new_char] << std::endl;
+              // ofs13346.close();
+
+              // restart spell checker at the start state
               new_path->mini_dictionary_state_ = mini_dictionary_->Start();
+
+              // new_path->mini_dictionary_active = false;
+
             } else {
-               // go to next state
+
+              // // show log
+              // std::ofstream ofs13365("/tmp/cpp_log.txt", std::ios::app);
+              // ofs13365 << "4.mini_dictionary_continue : " << vocab_tmp[new_char] << std::endl;
+              // ofs13365.close();
+
+              // new_path->mini_dictionary_active = true;
+
+              // go to next state
               new_path->mini_dictionary_state_ = mini_matcher_->Value().nextstate;
             }
+
             new_path->mini_dictionary_active = true;
+
           } else {
+
+            // // show log
+            // std::ofstream ofs13365("/tmp/cpp_log.txt", std::ios::app);
+            // ofs13365 << "2.kokoha : " << std::endl;
+            // ofs13365.close();
+
             // unfortunately if we set this false, we could not get funnel words!
-            new_path->mini_dictionary_active = true;
+
+            // new_path->mini_dictionary_state_ = mini_dictionary_->Start();
+            new_path->mini_dictionary_active = false;
+
+            // new_path->mini_dictionary_active = true;
+
+            // if (base_dictionary_active == true) {
+            //   new_path->mini_dictionary_active = true;
+            // } else {
+            //   // new_path->mini_dictionary_state_ = mini_dictionary_->Start();
+            //   new_path->mini_dictionary_active = false;
+            // }
           }
 
           // new trie node and return
@@ -213,6 +282,13 @@ PathTrie* PathTrie::get_path_trie(int new_char, int new_timestep, float cur_log_
           auto final_weight = dictionary_->Final(dictionary_state_);
           bool is_final = (final_weight != FSTZERO);
           if (is_final && reset) {
+
+            // // WTF?! Nerver come here...
+            // // show log
+            // std::ofstream ofs13335("/tmp/cpp_log.txt", std::ios::app);
+            // ofs13335 << "1.mini_dictionary_reset : " << "  " << std::endl;
+            // ofs13335.close();
+
             dictionary_state_ = dictionary_->Start();
           }
           return nullptr;
@@ -235,7 +311,14 @@ PathTrie* PathTrie::get_path_trie(int new_char, int new_timestep, float cur_log_
           bool is_final = (final_weight != FSTZERO);
           if (is_final && reset) {
   	         // restart spell checker at the start state
+
+             // // show log
+             // std::ofstream ofs13335("/tmp/cpp_log.txt", std::ios::app);
+             // ofs13335 << "2.mini_dictionary_reset : " << "  " << std::endl;
+             // ofs13335.close();
+
             new_path->dictionary_state_ = dictionary_->Start();
+
           } else {
   	         // go to next state
             new_path->dictionary_state_ = matcher_->Value().nextstate;
