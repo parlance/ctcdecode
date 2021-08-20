@@ -201,8 +201,8 @@ std::pair<torch::Tensor, torch::Tensor> beam_decode_with_given_state(at::Tensor 
         }
         }
     
-    torch::Tensor output_tokens_tensor = torch::randint(1, {batch_results.size(), max_result_size, max_output_tokens_size});
-    torch::Tensor output_timesteps_tensor = torch::randint(1, {batch_results.size(), max_result_size, max_output_tokens_size});
+    torch::Tensor output_tokens_tensor = torch::randint(1, {static_cast<long long>(batch_results.size()), max_result_size, max_output_tokens_size});
+    torch::Tensor output_timesteps_tensor = torch::randint(1, {static_cast<long long>(batch_results.size()), max_result_size, max_output_tokens_size});
 
 
     auto scores_accessor =  th_scores.accessor<float, 2>();
