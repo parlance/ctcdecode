@@ -37,7 +37,7 @@ class CTCBeamDecoder(object):
                                                         self._num_labels)
         self._cutoff_prob = cutoff_prob
 
-    def decode(self, probs, seq_lens=None, funnels={}):
+    def decode(self, probs, seq_lens=None, funnels={}, weights={}):
         """
         Conducts the beamsearch on model outputs and return results.
         Args:
@@ -77,6 +77,7 @@ class CTCBeamDecoder(object):
                                              seq_lens,
                                              self._labels,
                                              funnels,
+                                             weights,
                                              self._num_labels,
                                              self._beam_width,
                                              self._num_processes,
@@ -113,3 +114,11 @@ class CTCBeamDecoder(object):
     def __del__(self):
         if self._scorer is not None:
             ctc_decode.paddle_release_scorer(self._scorer)
+
+    def add_vocabs(self, vocabs=[]):
+
+        if len(vocabs) == 0:
+            return
+
+        if self._scorer is not None:
+            return ctc_decode.add_vocabs(self._scorer, vocabs)

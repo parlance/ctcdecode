@@ -38,6 +38,7 @@ int beam_decode(at::Tensor th_probs,
                 at::Tensor th_seq_lens,
                 std::vector<std::string> new_vocab,
                 std::map<std::string, std::string> funnels,
+                std::map<std::string, double> weights,
                 int vocab_size,
                 size_t beam_size,
                 size_t num_processes,
@@ -120,8 +121,9 @@ int paddle_beam_decode(at::Tensor th_probs,
 
     // dummy funnels
     std::map<std::string, std::string> funnels = {};
-    
-    return beam_decode(th_probs, th_seq_lens, labels, funnels, vocab_size, beam_size, num_processes,
+    std::map<std::string, double> weights = {};
+
+    return beam_decode(th_probs, th_seq_lens, labels, funnels, weights, vocab_size, beam_size, num_processes,
                 cutoff_prob, cutoff_top_n, blank_id, log_input, NULL, th_output, th_timesteps, th_scores, th_out_length);
 }
 
@@ -129,6 +131,7 @@ int paddle_beam_decode_lm(at::Tensor th_probs,
                           at::Tensor th_seq_lens,
                           std::vector<std::string> labels,
                           std::map<std::string, std::string> funnels,
+                          std::map<std::string, double> weights,
                           int vocab_size,
                           size_t beam_size,
                           size_t num_processes,
@@ -143,7 +146,7 @@ int paddle_beam_decode_lm(at::Tensor th_probs,
                           at::Tensor th_out_length){
 
 
-    return beam_decode(th_probs, th_seq_lens, labels, funnels, vocab_size, beam_size, num_processes,
+    return beam_decode(th_probs, th_seq_lens, labels, funnels, weights, vocab_size, beam_size, num_processes,
                 cutoff_prob, cutoff_top_n, blank_id, log_input, scorer, th_output, th_timesteps, th_scores, th_out_length);
 }
 
@@ -178,6 +181,15 @@ void reset_params(void *scorer, double alpha, double beta){
     ext_scorer->reset_params(alpha, beta);
 }
 
+int add_vocabs(void *scorer, std::vector<std::string> vocabs){
+
+    Scorer *ext_scorer  = static_cast<Scorer *>(scorer);
+
+    ext_scorer->add_vocabs(true, vocabs);
+
+    return 1;
+}
+
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
   m.def("paddle_beam_decode", &paddle_beam_decode, "paddle_beam_decode");
@@ -188,4 +200,5 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
   m.def("get_max_order", &get_max_order, "get_max_order");
   m.def("get_dict_size", &get_dict_size, "get_max_order");
   m.def("reset_params", &reset_params, "reset_params");
+  m.def("add_vocabs", &add_vocabs, "add_vocabs");
 }

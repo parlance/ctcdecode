@@ -47,9 +47,9 @@ public:
          const std::vector<std::string> &vocabulary);
   ~Scorer();
 
-  double get_log_cond_prob(const std::vector<std::string> &words, const std::map<std::string, std::string> &funnels);
+  double get_log_cond_prob(const std::vector<std::string> &words, const std::map<std::string, std::string> &funnels, const std::map<std::string, double> &weights);
 
-  double get_sent_log_prob(const std::vector<std::string> &words, const std::map<std::string, std::string> &funnels);
+  double get_sent_log_prob(const std::vector<std::string> &words, const std::map<std::string, std::string> &funnels, const std::map<std::string, double> &weights);
 
   // return the max order
   size_t get_max_order() const { return max_order_; }
@@ -75,11 +75,20 @@ public:
   // word insertion weight
   double beta;
 
-  // pointer to the dictionary of FST
+  // pointer to the minified dictionary of FST
   void *dictionary;
+
+  // pointer to the original dictionary of FST
+  fst::StdVectorFst orig_dictionary;
 
   // char map
   std::unordered_map<std::string, int> char_map_;
+
+  // add vocab into  dictionary for FST
+  int add_vocab(bool add_space, std::string vocab);
+
+  // add vocabs to dictionary
+  int add_vocabs(bool add_space, const std::vector<std::string> &vocabs);
 
 protected:
   // necessary setup: load language model, set char map, fill FST's dictionary
@@ -95,7 +104,7 @@ protected:
   // set char map
   void set_char_map(const std::vector<std::string> &char_list);
 
-  double get_log_prob(const std::vector<std::string> &words, const std::map<std::string, std::string> &funnels);
+  double get_log_prob(const std::vector<std::string> &words, const std::map<std::string, std::string> &funnels, const std::map<std::string, double> &weights);
 
   // translate the vector in index to string
   std::string vec2str(const std::vector<int> &input);

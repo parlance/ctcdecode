@@ -43,18 +43,6 @@ public:
   // remove current path from root
   void remove();
 
-  /// funnels
-
-  // create and set mini dictionary
-  double create_mini_dictionary(const std::map<std::string, std::string> &funnels,
-                                std::unordered_map<std::string, int> char_map_,
-                                int space_id,
-                                bool add_space);
-
-  // // prepare matcher for mini dictionary
-  // void set_mini_matcher(std::shared_ptr<fst::SortedMatcher<fst::StdVectorFst>>);
-
-
   float log_prob_b_prev;
   float log_prob_nb_prev;
   float log_prob_b_cur;
@@ -80,26 +68,8 @@ private:
   // true if finding ars in FST
   std::shared_ptr<fst::SortedMatcher<fst::StdVectorFst>> matcher_;
 
-  /// funnels
-
-  // flag if mini dictionary exists
-  bool has_mini_dictionary_;
-
-  // pointer to mnini dictionary of FST
-  fst::StdVectorFst* mini_dictionary_;
-
-  // miin dictionary state
-  fst::StdVectorFst::StateId mini_dictionary_state_;
-
-  // true if finding ars in mini dictionary FST
-  std::shared_ptr<fst::SortedMatcher<fst::StdVectorFst>> mini_matcher_;
-
   // base dictinary is still active
   bool base_dictionary_active = true;
-
-  // mini dictionary is still active
-  bool mini_dictionary_active = true;
-
 };
 
 #endif  // PATH_TRIE_H

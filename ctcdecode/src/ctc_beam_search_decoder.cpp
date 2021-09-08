@@ -22,6 +22,7 @@ using namespace std;
 
 DecoderState::DecoderState(const std::vector<std::string> &vocabulary,
                            const std::map<std::string, std::string> &funnels,
+                           const std::map<std::string, double> &weights,
                            size_t beam_size,
                            double cutoff_prob,
                            size_t cutoff_top_n,
@@ -36,6 +37,7 @@ DecoderState::DecoderState(const std::vector<std::string> &vocabulary,
   , log_input(log_input)
   , vocabulary(vocabulary)
   , funnels(funnels)
+  , weights(weights)
   , ext_scorer(ext_scorer)
 {
   // assign space id
@@ -61,28 +63,18 @@ DecoderState::DecoderState(const std::vector<std::string> &vocabulary,
     auto matcher = std::make_shared<FSTMATCH>(*dict_ptr, fst::MATCH_INPUT);
     root.set_matcher(matcher);
 
-    /// funnels
-
-    if ( funnels.size() > 0 ) {
-      // get space id
-      int _space_id;
-      auto it = std::find(vocabulary.begin(), vocabulary.end(), " ");
-      // if no space in vocabulary
-      if (it == vocabulary.end()) {
-        _space_id = -2;
-      } else {
-        _space_id = std::distance(vocabulary.begin(), it);
-      }
-
-      // create mini dictionary and setup matcher
-      root.create_mini_dictionary(funnels,
-                                  ext_scorer->char_map_,
-                                  _space_id,
-                                  true);
-    }
-
   }
 }
+
+// // clean up ?
+// DecoderState::~DecoderState() {
+//
+//   // lm::WordIndex word_index4 = model->BaseVocabulary().Index("かくにん");
+//   std::ofstream ofs121223("/tmp/cpp_log.txt", std::ios::app);
+//   ofs121223 << "DecoderState.cleanup: " << std::endl;
+//   ofs121223.close();
+// }
+
 
 void
 DecoderState::next(const std::vector<std::vector<double>> &probs_seq)
@@ -153,16 +145,16 @@ DecoderState::next(const std::vector<std::vector<double>> &probs_seq)
         // おそらく、ここで、言語モデルの何かが使われ、マッチする場合は高めのスコア、マッチしない場合は低めのスコアになる！？
         // get new prefix
 
-        // debug show words
-        std::vector<int> output4;
-        std::vector<int> timesteps4;
-        prefix->get_path_vec(output4, timesteps4);
-        auto words4 = ext_scorer->split_labels(output4);
-        std::string words_str4;
-        for (string ss: words4) {
-          words_str4 += ss;
-          words_str4 += " ";
-        }
+        // // debug show words
+        // std::vector<int> output4;
+        // std::vector<int> timesteps4;
+        // prefix->get_path_vec(output4, timesteps4);
+        // auto words4 = ext_scorer->split_labels(output4);
+        // std::string words_str4;
+        // for (string ss: words4) {
+        //   words_str4 += ss;
+        //   words_str4 += " ";
+        // }
 
         // // show log
         // std::ofstream ofs13335("/tmp/cpp_log.txt", std::ios::app);
@@ -209,7 +201,7 @@ DecoderState::next(const std::vector<std::vector<double>> &probs_seq)
             std::vector<std::string> ngram;
             ngram = ext_scorer->make_ngram(prefix_to_score);
 
-            score = ext_scorer->get_log_cond_prob(ngram, funnels) * ext_scorer->alpha;
+            score = ext_scorer->get_log_cond_prob(ngram, funnels, weights) * ext_scorer->alpha;
 
 
 
@@ -344,7 +336,7 @@ DecoderState::decode() const
       if (!prefix->is_empty() && prefix->character != space_id) {
         float score = 0.0;
         std::vector<std::string> ngram = ext_scorer->make_ngram(prefix);
-        score = ext_scorer->get_log_cond_prob(ngram, funnels) * ext_scorer->alpha;
+        score = ext_scorer->get_log_cond_prob(ngram, funnels, weights) * ext_scorer->alpha;
         score += ext_scorer->beta;
         scores[prefix] += score;
       }
@@ -372,7 +364,7 @@ DecoderState::decode() const
 
       // what if we comment this out. it can be greedy search?
       // remove language model weight:
-      approx_ctc -= (ext_scorer->get_sent_log_prob(words, funnels)) * ext_scorer->alpha;
+      approx_ctc -= (ext_scorer->get_sent_log_prob(words, funnels, weights)) * ext_scorer->alpha;
     }
     prefixes_copy[i]->approx_ctc = approx_ctc;
   }
@@ -384,6 +376,7 @@ std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
     const std::vector<std::vector<double>> &probs_seq,
     const std::vector<std::string> &vocabulary,
     const std::map<std::string, std::string> &funnels,
+    const std::map<std::string, double> &weights,
     size_t beam_size,
     double cutoff_prob,
     size_t cutoff_top_n,
@@ -393,18 +386,19 @@ std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
     Scorer *ext_scorer)
 {
 
-  DecoderState state(vocabulary, funnels, beam_size, cutoff_prob, cutoff_top_n, blank_id,
+  DecoderState state(vocabulary, funnels, weights, beam_size, cutoff_prob, cutoff_top_n, blank_id,
                      log_input, ext_scorer);
   state.next(probs_seq);
   return state.decode();
 }
 
-
+// this function is executed by binding.cpp
 std::vector<std::vector<std::pair<double, Output>>>
 ctc_beam_search_decoder_batch(
     const std::vector<std::vector<std::vector<double>>> &probs_split,
     const std::vector<std::string> &vocabulary,
     const std::map<std::string, std::string> &funnels,
+    const std::map<std::string, double> &weights,
     size_t beam_size,
     size_t num_processes,
     double cutoff_prob,
@@ -430,6 +424,7 @@ ctc_beam_search_decoder_batch(
                                   probs_split[i],
                                   vocabulary,
                                   funnels,
+                                  weights,
                                   beam_size,
                                   cutoff_prob,
                                   cutoff_top_n,
