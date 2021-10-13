@@ -43,7 +43,7 @@ DecoderState::DecoderState(const std::vector<std::string> &vocabulary,
   root.score = root.log_prob_b_prev = 0.0;
   prefixes.push_back(&root);
 
-  if (ext_scorer != nullptr && !ext_scorer->is_character_based()) {
+  if (ext_scorer != nullptr && !(ext_scorer->is_character_based() || ext_scorer->is_token_based())) {
     auto fst_dict = static_cast<fst::StdVectorFst *>(ext_scorer->dictionary);
     fst::StdVectorFst *dict_ptr = fst_dict->Copy(true);
     root.set_dictionary(dict_ptr);
@@ -119,10 +119,10 @@ DecoderState::next(const std::vector<std::vector<double>> &probs_seq)
 
           // language model scoring
           if (ext_scorer != nullptr &&
-              (c == space_id || ext_scorer->is_character_based())) {
+              (c == space_id || ext_scorer->is_character_based()  || ext_scorer->is_token_based())) {
             PathTrie *prefix_to_score = nullptr;
             // skip scoring the space
-            if (ext_scorer->is_character_based()) {
+            if (ext_scorer->is_character_based()  || ext_scorer->is_token_based()) {
               prefix_to_score = prefix_new;
             } else {
               prefix_to_score = prefix;
@@ -171,7 +171,7 @@ DecoderState::decode()
   }
 
   // score the last word of each prefix that doesn't end with space
-  if (ext_scorer != nullptr && !ext_scorer->is_character_based()) {
+  if (ext_scorer != nullptr && !(ext_scorer->is_character_based() || ext_scorer->is_token_based())) {
     for (size_t i = 0; i < beam_size && i < prefixes_copy.size(); ++i) {
       auto prefix = prefixes_copy[i];
       if (!prefix->is_empty() && prefix->character != space_id) {
