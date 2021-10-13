@@ -43,7 +43,8 @@ public:
   Scorer(double alpha,
          double beta,
          const std::string &lm_path,
-         const std::vector<std::string> &vocabulary);
+         const std::vector<std::string> &vocabulary,
+         bool is_token_based);
   ~Scorer();
 
   double get_log_cond_prob(const std::vector<std::string> &words);
@@ -58,6 +59,9 @@ public:
 
   // retrun true if the language model is character based
   bool is_character_based() const { return is_character_based_; }
+  
+  // retrun true if the language model is token based (e.g., BPE)
+  bool is_token_based() const { return is_token_based_; }
 
   // reset params alpha & beta
   void reset_params(float alpha, float beta);
@@ -99,6 +103,7 @@ protected:
 private:
   void *language_model_;
   bool is_character_based_;
+  bool is_token_based_;
   size_t max_order_;
   size_t dict_size_;
 

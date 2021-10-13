@@ -144,8 +144,9 @@ void* paddle_get_scorer(double alpha,
                         double beta,
                         const char* lm_path,
                         vector<std::string> new_vocab,
-                        int vocab_size) {
-    Scorer* scorer = new Scorer(alpha, beta, lm_path, new_vocab);
+                        int vocab_size,
+                        bool is_token_based) {
+    Scorer* scorer = new Scorer(alpha, beta, lm_path, new_vocab, is_token_based);
     return static_cast<void*>(scorer);
 }
 
@@ -272,6 +273,10 @@ int is_character_based(void *scorer){
     Scorer *ext_scorer  = static_cast<Scorer *>(scorer);
     return ext_scorer->is_character_based();
 }
+int is_token_based(void *scorer){
+    Scorer *ext_scorer  = static_cast<Scorer *>(scorer);
+    return ext_scorer->is_token_based();
+}
 size_t get_max_order(void *scorer){
     Scorer *ext_scorer  = static_cast<Scorer *>(scorer);
     return ext_scorer->get_max_order();
@@ -293,6 +298,7 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
   m.def("paddle_get_scorer", &paddle_get_scorer, "paddle_get_scorer");
   m.def("paddle_release_scorer", &paddle_release_scorer, "paddle_release_scorer");
   m.def("is_character_based", &is_character_based, "is_character_based");
+  m.def("is_token_based", &is_token_based, "is_token_based");
   m.def("get_max_order", &get_max_order, "get_max_order");
   m.def("get_dict_size", &get_dict_size, "get_max_order");
   m.def("reset_params", &reset_params, "reset_params");

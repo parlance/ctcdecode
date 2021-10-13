@@ -34,7 +34,8 @@ void* paddle_get_scorer(double alpha,
                         double beta,
                         const char* lm_path,
                         std::vector<std::string> labels,
-                        int vocab_size);
+                        int vocab_size,
+                        bool is_token_based);
 
 
 void* paddle_get_decoder_state(const std::vector<std::string> &vocabulary,
@@ -50,6 +51,7 @@ void paddle_release_state(void* state);
 
 
 int is_character_based(void *scorer);
+int is_token_based(void *scorer);
 size_t get_max_order(void *scorer);
 size_t get_dict_size(void *scorer);
 void reset_params(void *scorer, double alpha, double beta);

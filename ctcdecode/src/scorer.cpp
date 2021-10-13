@@ -16,12 +16,14 @@ using namespace lm::ngram;
 Scorer::Scorer(double alpha,
                double beta,
                const std::string& lm_path,
-               const std::vector<std::string>& vocab_list) {
+               const std::vector<std::string>& vocab_list,
+               bool is_token_based) {
   this->alpha = alpha;
   this->beta = beta;
 
   dictionary = nullptr;
-  is_character_based_ = true;
+  is_character_based_ = !is_token_based;
+  is_token_based_ = is_token_based;
   language_model_ = nullptr;
 
   max_order_ = 0;
@@ -47,7 +49,7 @@ void Scorer::setup(const std::string& lm_path,
   // set char map for scorer
   set_char_map(vocab_list);
   // fill the dictionary for FST
-  if (!is_character_based()) {
+  if (!(is_character_based() || is_token_based())) {
     fill_dictionary(true);
   }
 }
@@ -126,8 +128,10 @@ void Scorer::reset_params(float alpha, float beta) {
 
 std::string Scorer::vec2str(const std::vector<int>& input) {
   std::string word;
-  for (auto ind : input) {
-    word += char_list_[ind];
+  for (size_t i = 0; i < input.size(); ++i) {
+    word += char_list_[input[i]];
+    if(is_token_based_ && i + 1 < input.size())
+      word += " ";
   }
   return word;
 }
@@ -135,12 +139,18 @@ std::string Scorer::vec2str(const std::vector<int>& input) {
 std::vector<std::string> Scorer::split_labels(const std::vector<int>& labels) {
   if (labels.empty()) return {};
 
-  std::string s = vec2str(labels);
   std::vector<std::string> words;
-  if (is_character_based_) {
-    words = split_utf8_str(s);
-  } else {
-    words = split_str(s, " ");
+  if(is_token_based_) {
+    for (auto ind : labels)
+      words.push_back(char_list_[ind]);
+  }
+  else {
+    std::string s = vec2str(labels);
+    if (is_character_based_) {
+      words = split_utf8_str(s);
+    } else {
+      words = split_str(s, " ");
+    }
   }
   return words;
 }
@@ -169,7 +179,7 @@ std::vector<std::string> Scorer::make_ngram(PathTrie* prefix) {
     std::vector<int> prefix_vec;
     std::vector<int> prefix_steps;
 
-    if (is_character_based_) {
+    if (is_character_based_ || is_token_based_) {
       new_node = current_node->get_path_vec(prefix_vec, prefix_steps, -1, 1);
       current_node = new_node;
     } else {
