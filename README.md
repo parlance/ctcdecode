@@ -1,5 +1,5 @@
 # Connectionist Temporal Classification(CTC) beam search decoding for C#(ctcdecode)
-- [![lisence](https://img.shields.io/badge/lisence-MIT-green?style=flat-square)](https://github.com/aleksandr-aleksashin/ctcdecode/blob/master/LICENSE)
+- [![license](https://img.shields.io/badge/lisence-MIT-green?style=flat-square)](https://github.com/aleksandr-aleksashin/ctcdecode/blob/master/LICENSE)
 - [![nuget](https://img.shields.io/nuget/v/CTCBeamDecoder)](https://www.nuget.org/packages/CTCBeamDecoder)
 - [![downloads](https://img.shields.io/nuget/dt/CTCBeamDecoder)](https://www.nuget.org/packages/CTCBeamDecoder)
 
