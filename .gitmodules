@@ -4,3 +4,9 @@
 [submodule "third_party/ThreadPool"]
 	path = third_party/ThreadPool
 	url = https://github.com/progschj/ThreadPool.git
+[submodule "third_party/openfst-1.6.7-windows"]
+	path = third_party/openfst-1.6.7-windows
+	url = https://github.com/kkm000/openfst.git
+[submodule "third_party/boost_1_67_0"]
+	path = third_party/boost_1_67_0
+	url = https://github.com/boostorg/boost.git

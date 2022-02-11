@@ -307,7 +307,6 @@ std::vector<std::vector<std::pair<double, Output>>> ctc_beam_search_decoder_batc
                                   static_cast<DecoderState*>(states[i]),
                                   is_eos_s[i]));
   }
-
   // get decoding results
   std::vector<std::vector<std::pair<double, Output>>> batch_results;
   for (size_t i = 0; i < batch_size; ++i) {

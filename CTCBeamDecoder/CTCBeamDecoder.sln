@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.32112.339
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CTCBeamDecoder", "CTCBeamDecoder\CTCBeamDecoder.csproj", "{62D37836-B977-4AEC-A4CD-6808F2A061B0}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnitTest", "UnitTest\UnitTest.csproj", "{972C6B42-E8FA-4E6E-863C-B4E969EDAB7E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{62D37836-B977-4AEC-A4CD-6808F2A061B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{62D37836-B977-4AEC-A4CD-6808F2A061B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{62D37836-B977-4AEC-A4CD-6808F2A061B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{62D37836-B977-4AEC-A4CD-6808F2A061B0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{972C6B42-E8FA-4E6E-863C-B4E969EDAB7E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{972C6B42-E8FA-4E6E-863C-B4E969EDAB7E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{972C6B42-E8FA-4E6E-863C-B4E969EDAB7E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{972C6B42-E8FA-4E6E-863C-B4E969EDAB7E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5CAEEBD7-EC63-425D-A12F-8E82902EC0B4}
+	EndGlobalSection
+EndGlobal
