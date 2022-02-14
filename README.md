@@ -69,7 +69,7 @@ var result = decoder.Decode(output, scorer);
 
 ## License
 
-Authored by: Aleksashin Aleksandr (aleksandr-aleksashin)
-Developed in [Dasha.AI Inc](https://dasha.ai/) (Human-like conversational AI for developers)
+Authored by: Aleksashin Aleksandr (aleksandr-aleksashin)  
+Developed in [Dasha.AI Inc](https://dasha.ai/) (Human-like conversational AI for developers)  
 
 This project is under MIT license. You can obtain the license copy [here](https://github.com/aleksandr-aleksashin/ctcdecode/blob/master/LICENSE).
