@@ -1,10 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
+	    <Title>CTC(Connectionist Temporal Classification) beamsearch decoder</Title>
 		<TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net6.0;net5.0;netstandard2.0;netstandard2.1</TargetFrameworks>
 		<TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
 		<Nullable>enable</Nullable>
-		<Version>1.0.0</Version>
+		<Version>1.0.1</Version>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<RootNamespace>CTCBeamDecoder</RootNamespace>
 		<PackageId>CTCBeamDecoder</PackageId>
@@ -21,8 +22,8 @@
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<CodeAnalysisRuleset>..\..\.ruleset</CodeAnalysisRuleset>
 		<PackageTags>ctcdecoder;beamsearch;Connectionist;Classification;ctcdecode</PackageTags>
-		<PackageProjectUrl>https://github.com/aleksandr-aleksashin/ctcdecode</PackageProjectUrl>
-		<RepositoryUrl>https://github.com/aleksandr-aleksashin/ctcdecode</RepositoryUrl>
+		<PackageProjectUrl>https://github.com/aleksandr-aleksashin/ctcdecode-csharp</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/aleksandr-aleksashin/ctcdecode-csharp</RepositoryUrl>
 		<NeutralLanguage>en-US</NeutralLanguage>
 		<RuntimeIdentifiers>win-x64;linux-x64;linux-musl-x64</RuntimeIdentifiers>
 	</PropertyGroup>
@@ -36,14 +37,13 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	    <Content CopyToOutputDirectory="PreserveNewest" Include="NativeCTCBeamDecoder.dll" Link="NativeCTCBeamDecoder.dll" Pack="true" PackagePath="runtimes/win-x64/native/NativeCTCBeamDecoder.dll" />
+		<Content CopyToOutputDirectory="PreserveNewest" Include="NativeCTCBeamDecoder" Link="NativeCTCBeamDecoder" Pack="true" PackagePath="runtimes/linux-x64/native/NativeCTCBeamDecoder" />
+	</ItemGroup>
+	<ItemGroup>
 		<None Update="LICENSE">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
-		<None Update="NativeCTCBeamDecoder">
-			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</None>
-		<None Update="NativeCTCBeamDecoder.dll">
-			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</None>
 	</ItemGroup>
+
 </Project>

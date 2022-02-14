@@ -68,12 +68,36 @@ public class CTCDecoder
         return decoderResult;
     }
 
+    /// <summary>
+    /// Conducts the beamsearch on model outputs and return results.
+    /// </summary>
+    /// <param name="probs"> A rank 3 tensor representing model outputs. Shape: BATCHSIZE x N_TIMESTEPS x N_LABELS.</param>
+    /// <param name="scorer">Scorer to be used in decoding.</param>
+    /// <param name="decoderResult">Result buffer. Note: This method cleans up before using decoderResult.</param>
+    /// <param name="seqLens">Representing the sequence length of the items in the batch. Optional, if not provided the size of axis 1 (N_TIMESTEPS) of `probs` is used for all items</param>
+    public void Decode(float[] probs, int batchSize, int timeStepsCount, int numClasses, DecoderScorer scorer, DecoderResultArray decoderResult, int[]? seqLens = null) =>
+        DecodeInternal(probs, batchSize, timeStepsCount, numClasses, scorer, decoderResult, true, seqLens);
+
+    /// <summary>
+    /// Conducts the beamsearch on model outputs and return results.
+    /// </summary>
+    /// <param name="probs"> A rank 3 tensor representing model outputs. Shape: BATCHSIZE x N_TIMESTEPS x N_LABELS.</param>
+    /// <param name="scorer">Scorer to be used in decoding.</param>
+    /// <param name="seqLens">Representing the sequence length of the items in the batch. Optional, if not provided the size of axis 1 (N_TIMESTEPS) of `probs` is used for all items</param>
+    public DecoderResultArray Decode(float[] probs, int batchSize, int timeStepsCount, int numClasses, DecoderScorer scorer, int[]? seqLens = null)
+    {
+        var decoderResult = new DecoderResultArray(batchSize, _beamWidth, timeStepsCount);
+        DecodeInternal(probs, batchSize, timeStepsCount, numClasses, scorer, decoderResult, false, seqLens);
+
+        return decoderResult;
+    }
+
     private void DecodeInternal(float[,,] probs, DecoderScorer scorer, DecoderResult decoderResult, bool isNeedClean, int[]? seqLens = null)
     {
         var batchSize = probs.GetLength(0);
         var timeStepsCount = probs.GetLength(1);
 
-        AssertDimensions(probs, decoderResult, batchSize, timeStepsCount, seqLens);
+        AssertDimensions(decoderResult, batchSize, timeStepsCount, seqLens);
 
         if (isNeedClean)
         {
@@ -117,6 +141,108 @@ public class CTCDecoder
         }
     }
 
+    private void DecodeInternal(float[] probs, int batchSize, int timeStepsCount, int numClasses, DecoderScorer scorer, DecoderResultArray decoderResult, bool isNeedClean, int[]? seqLens = null)
+    {
+        AssertDimensions(decoderResult, batchSize, timeStepsCount, seqLens);
+
+        if (isNeedClean)
+        {
+            decoderResult.Clean();
+        }
+
+        seqLens ??= Enumerable.Repeat(timeStepsCount, batchSize).ToArray();
+
+        if (!scorer.IsEmptyScorer)
+        {
+            CTCDecoderInterop.BeamDecodeLm(probs,
+                                           seqLens,
+                                           scorer.Labels,
+                                           (uint) batchSize,
+                                           (uint) timeStepsCount,
+                                           (uint) numClasses,
+                                           _beamWidth,
+                                           _numProcesses,
+                                           _cutoffProb,
+                                           _cutoffTopN,
+                                           _blankId,
+                                           _logProbsInput,
+                                           scorer.Scorer,
+                                           decoderResult.BeamResults,
+                                           decoderResult.TimeSteps,
+                                           decoderResult.BeamScores,
+                                           decoderResult.OutLens);
+        }
+        else
+        {
+            CTCDecoderInterop.BeamDecode(probs,
+                                         seqLens,
+                                         scorer.Labels,
+                                         (uint) batchSize,
+                                         (uint) timeStepsCount,
+                                         (uint) numClasses,
+                                         _beamWidth,
+                                         _numProcesses,
+                                         _cutoffProb,
+                                         _cutoffTopN,
+                                         _blankId,
+                                         _logProbsInput,
+                                         decoderResult.BeamResults,
+                                         decoderResult.TimeSteps,
+                                         decoderResult.BeamScores,
+                                         decoderResult.OutLens);
+        }
+    }
+
+    /// <summary>
+    /// Decode with given scorer into result.
+    /// </summary>
+    /// <param name="probs"> A rank 3 tensor representing model outputs. Shape: BATCHSIZE x N_TIMESTEPS x N_LABELS.</param>
+    /// <param name="states">Sequence of decoding states. Shape: BATCHSIZE</param>
+    /// <param name="isEosS">Sequence of bool with lens equal to batch size.Should have `false` if haven`t pushed all chunks yet, and True if you pushed last chunk and you want to get an answer</param>
+    /// <param name="decoderResult">Result buffer. Note: This method cleans up before using decoderResult.</param>
+    /// <param name="seqLens">Representing the sequence length of the items in the batch. Optional, if not provided the size of axis 1 (N_TIMESTEPS) of `probs` is used for all items</param>
+    public void DecodeOnline(float[] probs, int batchSize, int timeStepsCount, int numClasses, DecoderState[] states, bool[] isEosS, DecoderResultArray decoderResult, int[]? seqLens = null) =>
+        DecodeOnlineInternal(probs, batchSize, timeStepsCount, numClasses, states, isEosS, decoderResult, true, seqLens);
+
+    /// <summary>
+    /// Conducts the beamsearch on model outputs and return results.
+    /// </summary>
+    /// <param name="probs"> A rank 3 tensor representing model outputs. Shape: BATCHSIZE x N_TIMESTEPS x N_LABELS.</param>
+    /// <param name="states">Sequence of decoding states. Shape: BATCHSIZE</param>
+    /// <param name="isEosS">Sequence of bool with lens equal to batch size.Should have `false` if haven`t pushed all chunks yet, and True if you pushed last chunk and you want to get an answer</param>
+    /// <param name="seqLens">Representing the sequence length of the items in the batch. Optional, if not provided the size of axis 1 (N_TIMESTEPS) of `probs` is used for all items</param>
+    public DecoderResultArray DecodeOnline(float[] probs, int batchSize, int timeStepsCount, int numClasses, DecoderState[] states, bool[] isEosS, int[]? seqLens = null)
+    {
+        var decoderResult = new DecoderResultArray(batchSize, _beamWidth, timeStepsCount);
+        DecodeOnlineInternal(probs, batchSize, timeStepsCount, numClasses, states, isEosS, decoderResult, false, seqLens);
+
+        return decoderResult;
+    }
+
+    private void DecodeOnlineInternal(float[] probs, int batchSize, int timeStepsCount, int numClasses, DecoderState[] states, bool[] isEosS, DecoderResultArray decoderResult, bool isNeedClean, int[]? seqLens = null)
+    {
+        AssertDimensions(decoderResult, batchSize, timeStepsCount, seqLens);
+
+        if (isNeedClean)
+        {
+            decoderResult.Clean();
+        }
+
+        seqLens ??= Enumerable.Repeat(timeStepsCount, batchSize).ToArray();
+
+        CTCDecoderInterop.BeamDecodeWithGivenState(probs,
+                                                   seqLens, (uint) batchSize, (uint) timeStepsCount, (uint) numClasses,
+                                                   _beamWidth,
+                                                   _numProcesses,
+                                                   states.Select(x => x.State)
+                                                         .ToArray(),
+                                                   isEosS,
+                                                   decoderResult.BeamScores,
+                                                   decoderResult.OutLens,
+                                                   decoderResult.BeamResults,
+                                                   decoderResult.TimeSteps);
+    }
+
     /// <summary>
     /// Decode with given scorer into result.
     /// </summary>
@@ -150,7 +276,7 @@ public class CTCDecoder
         var batchSize = probs.GetLength(0);
         var timeStepsCount = probs.GetLength(1);
 
-        AssertDimensions(probs, decoderResult, batchSize, timeStepsCount, seqLens);
+        AssertDimensions(decoderResult, batchSize, timeStepsCount, seqLens);
 
         if (isNeedClean)
         {
@@ -172,29 +298,26 @@ public class CTCDecoder
                                                    decoderResult.TimeSteps);
     }
 
-    private void AssertDimensions(float[,,] probs, DecoderResult decoderResult, int batchSize, int timeStepsCount, int[]? seqLens = null)
+    private void AssertDimensions(IDecoderResult decoderResult, int batchSize, int timeStepsCount, int[]? seqLens = null)
     {
-        if (decoderResult.BeamResults.GetLength(0) != batchSize)
+        if (decoderResult.BatchSize != batchSize)
         {
-            throw new ArgumentOutOfRangeException(nameof(decoderResult.BeamResults),
-                                                  $"BeamResults dimension 0 must be equal to probs dimensional 0. " +
-                                                  $"Real: '{decoderResult.BeamResults.GetLength(0)}' " +
+            throw new ArgumentOutOfRangeException("BeamResults dimension 0 must be equal to probs dimensional 0. " +
+                                                  $"Real: '{decoderResult.BatchSize}' " +
                                                   $"Must: '{batchSize}'");
         }
 
-        if (decoderResult.BeamResults.GetLength(1) != _beamWidth)
+        if (decoderResult.BeamWidth != _beamWidth)
         {
-            throw new ArgumentOutOfRangeException(nameof(decoderResult.BeamResults),
-                                                  $"BeamResults dimension 1 must be equal to beam width. " +
-                                                  $"Real: '{decoderResult.BeamResults.GetLength(1)}' " +
+            throw new ArgumentOutOfRangeException($"BeamResults dimension 1 must be equal to beam width. " +
+                                                  $"Real: '{decoderResult.BeamWidth}' " +
                                                   $"Must: '{_beamWidth}'");
         }
 
-        if (decoderResult.BeamResults.GetLength(2) != probs.GetLength(1))
+        if (decoderResult.TimeStepsCount != timeStepsCount)
         {
-            throw new ArgumentOutOfRangeException(nameof(decoderResult.BeamResults),
-                                                  $"BeamResults dimension 2 must be equal to probs dimensional 1. " +
-                                                  $"Real: '{decoderResult.BeamResults.GetLength(2)}' " +
+            throw new ArgumentOutOfRangeException($"BeamResults dimension 2 must be equal to probs dimensional 1. " +
+                                                  $"Real: '{decoderResult.TimeStepsCount}' " +
                                                   $"Must: '{timeStepsCount}'");
         }
 

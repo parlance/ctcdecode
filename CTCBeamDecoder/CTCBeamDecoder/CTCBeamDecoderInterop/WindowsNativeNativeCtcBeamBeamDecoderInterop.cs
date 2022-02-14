@@ -1,7 +1,9 @@
 ﻿using System.Runtime.InteropServices;
+using System.Security;
 
 namespace CTCBeamDecoder.CTCBeamDecoderInterop;
 
+[SuppressUnmanagedCodeSecurity]
 internal sealed class WindowsNativeNativeCtcBeamBeamDecoderInterop : INativeCTCBeamDecoder
 {
     private const string _lib = "NativeCTCBeamDecoder.dll";

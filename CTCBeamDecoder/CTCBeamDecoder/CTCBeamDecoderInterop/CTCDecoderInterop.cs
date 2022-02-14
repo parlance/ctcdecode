@@ -27,6 +27,49 @@ internal static class CTCDecoderInterop
     }
 
     public static unsafe int BeamDecode(
+        float[] thProbs, //batch_size*max_time*num_classes
+        int[] thSeqLens, //batch_size
+        string[] labels, //num_labels
+        uint batchsize,
+        uint max_time,
+        uint num_classes,
+        uint beamSize,
+        uint numProcesses,
+        double cutoffProb,
+        uint cutoffTopN,
+        uint blankId,
+        int logInput,
+        int[] thOutput, //batch_size*beam_size*max_time
+        int[] thTimesteps, //batch_size*beam_size*max_time
+        float[] thScores, //batch_size*beam_size
+        int[] thOutLength //batch_size*beam_size
+    )
+    {
+        fixed (float* probs = thProbs, scores = thScores)
+        {
+            fixed (int* seqLens = thSeqLens, output = thOutput, timeSteps = thTimesteps, outLength = thOutLength)
+            {
+                return Interop.paddle_beam_decode_call(probs,
+                                                       seqLens,
+                                                       labels,
+                                                       batchsize,
+                                                       max_time,
+                                                       num_classes,
+                                                       beamSize,
+                                                       numProcesses,
+                                                       cutoffProb,
+                                                       cutoffTopN,
+                                                       blankId,
+                                                       logInput,
+                                                       output,
+                                                       timeSteps,
+                                                       scores,
+                                                       outLength);
+            }
+        }
+    }
+
+    public static unsafe int BeamDecode(
         float[,,] thProbs, //batch_size*max_time*num_classes
         int[] thSeqLens, //batch_size
         string[] labels, //num_labels
@@ -62,6 +105,37 @@ internal static class CTCDecoderInterop
                                                        timeSteps,
                                                        scores,
                                                        outLength);
+            }
+        }
+    }
+
+    public static unsafe int BeamDecodeLm(
+        float[] thProbs, //batch_size*max_time*num_classes
+        int[] thSeqLens, //batch_size
+        string[] labels, //num_labels
+        uint batchsize,
+        uint max_time,
+        uint num_classes,
+        uint beamSize,
+        uint numProcesses,
+        double cutoffProb,
+        uint cutoffTopN,
+        uint blankId,
+        int logInput,
+        IntPtr scorer,
+        int[] thOutput, //batch_size*beam_size*max_time
+        int[] thTimesteps, //batch_size*beam_size*max_time
+        float[] thScores, //batch_size*beam_size
+        int[] thOutLength //batch_size*beam_size
+    )
+    {
+        fixed (float* probs = thProbs, scores = thScores)
+        {
+            fixed (int* seqLens = thSeqLens, output = thOutput, timeSteps = thTimesteps, outLength = thOutLength)
+            {
+                return Interop.paddle_beam_decode_lm_call(probs, seqLens, labels, batchsize, max_time, num_classes, beamSize, numProcesses, cutoffProb, cutoffTopN, blankId, logInput, scorer.ToPointer(), output,
+                                                          timeSteps,
+                                                          scores, outLength);
             }
         }
     }
@@ -108,6 +182,44 @@ internal static class CTCDecoderInterop
                                                 int logInput,
                                                 IntPtr scorer)
         => new IntPtr(Interop.paddle_get_decoder_state_call(labels, (uint) labels.Length, beamSize, cutoffProb, cutoffTopN, blankId, logInput, scorer.ToPointer()));
+
+    public static unsafe void BeamDecodeWithGivenState(float[] thProbs, //batchsize*max_time*num_classes
+                                                       int[] thSeqLens, //batchsize
+                                                       uint batchsize,
+                                                       uint max_time,
+                                                       uint num_classes,
+                                                       uint beamSize,
+                                                       uint numProcesses,
+                                                       IntPtr[] states, //batchsize
+                                                       bool[] isEosS, //batchsize
+                                                       float[] thScores, //batchsize, beam_size
+                                                       int[] thOutLength, //batchsize, beam_size
+                                                       int[] outputTokensTensor, //batchsize x beam_size*max_time
+                                                       int[] outputTimestepsTensor //batchsize x beam_size*max_time
+    )
+    {
+        fixed (float* probs = thProbs, scores = thScores)
+        {
+            fixed (int* seqLens = thSeqLens, outLength = thOutLength, outputTokens = outputTokensTensor, outputTimesteps = outputTimestepsTensor)
+            {
+                fixed (bool* eos = isEosS)
+                {
+                    var statesPointers = new void*[states.Length];
+
+                    for (int i = 0; i < states.Length; i++)
+                    {
+                        statesPointers[i] = states[i].ToPointer();
+                    }
+
+                    fixed (void** statesPtr = statesPointers)
+                    {
+                        Interop.paddle_beam_decode_with_given_state_call(probs, seqLens, batchsize, max_time, num_classes, beamSize, numProcesses, statesPtr, eos, scores, outLength, outputTokens,
+                                                                         outputTimesteps);
+                    }
+                }
+            }
+        }
+    }
 
     public static unsafe void BeamDecodeWithGivenState(float[,,] thProbs, //batchsize*max_time*num_classes
                                                        int[] thSeqLens, //batchsize

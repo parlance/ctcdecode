@@ -14,8 +14,8 @@ KenLM language modeling support is also optionally included, and enabled by defa
 
 ```bash
 # get the code
-git clone --recursive https://github.com/aleksandr-aleksashin/ctcdecode.git
-cd ctcdecode
+git clone --recursive https://github.com/aleksandr-aleksashin/ctcdecode-csharp.git
+cd ctcdecode-csharp
 ```
 ## Compilation
 To compile native library needs to switch into directory `./ctcdecode`.
@@ -72,4 +72,4 @@ var result = decoder.Decode(output, scorer);
 Authored by: Aleksashin Aleksandr (aleksandr-aleksashin)  
 Developed in [Dasha.AI Inc](https://dasha.ai/) (Human-like conversational AI for developers)  
 
-This project is under MIT license. You can obtain the license copy [here](https://github.com/aleksandr-aleksashin/ctcdecode/blob/master/LICENSE).
+This project is under MIT license. You can obtain the license copy [here](https://github.com/aleksandr-aleksashin/ctcdecode-csharp/blob/master/LICENSE).
