@@ -121,6 +121,7 @@ ENV/
 *.dylib
 *.dll
 !/CTCBeamDecoder/CTCBeamDecoder/NativeCTCBeamDecoder.dll
+!/CTCBeamDecoder/CTCBeamDecoder/NativeCTCBeamDecoder.so
 # Fortran module files
 *.mod
 *.smod

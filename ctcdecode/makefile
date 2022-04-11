@@ -18,7 +18,7 @@ OBJ_FILES += $(SRC_FILES2:.cc=.o)
 LDFLAGS := -I../third_party/boost_1_67_0 -fPIC -O3 -std=c++14 -shared -ldl
 CPPFLAGS := -I../third_party/openfst-1.6.7/src/include -I../third_party/kenlm -I../third_party/ThreadPool -I../third_party/utf8 -I../third_party/boost_1_67_0 -DKENLM_MAX_ORDER=6 -DINCLUDE_KENLM -fPIC -O3 -std=c++14 -shared -ldl
 
-NativeCTCBeamDecoder: $(OBJ_FILES)
+NativeCTCBeamDecoder.so: $(OBJ_FILES)
 #	echo $(OBJ_FILES)
 	echo $(TESTS)
 	 g++ $(LDFLAGS) -o $@ $^
