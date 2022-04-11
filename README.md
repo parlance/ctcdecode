@@ -20,7 +20,7 @@ cd ctcdecode-csharp
 ## Compilation
 To compile native library needs to switch into directory `./ctcdecode`.
 - For building Linux native library required `g++`. Run `make clean` and then `make`. This way works in WSL too.
-- For building Windows native library required `MinGW64`. Run `make clean` and then `make`.
+- For building Windows native library required `MinGW64`. Run `make clean` and then `make -f makefile-windows`.
 
 ## How to Use
 
