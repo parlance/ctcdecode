@@ -12,9 +12,7 @@ KenLM language modeling support is also optionally included, and enabled by defa
 The below installation also works for Google Colab.
 
 ```bash
-# get the code
-git clone --recursive https://github.com/parlance/ctcdecode.git
-cd ctcdecode && pip install .
+pip install git+https://github.com/parlance/ctcdecode.git
 ```
 
 ## How to Use
