@@ -10,3 +10,6 @@
 [submodule "third_party/boost_1_67_0"]
 	path = third_party/boost_1_67_0
 	url = https://github.com/boostorg/boost.git
+[submodule "third_party/openfst"]
+	path = third_party/openfst
+	url = https://github.com/mjansche/openfst.git
