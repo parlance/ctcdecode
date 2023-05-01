@@ -2,10 +2,10 @@
 
 	<PropertyGroup>
 	    <Title>CTC(Connectionist Temporal Classification) beamsearch decoder</Title>
-		<TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net6.0;net5.0;netstandard2.0;netstandard2.1</TargetFrameworks>
+		<TargetFrameworks Condition="'$(LibraryFrameworks)'==''">net7.0;net6.0;net5.0;netstandard2.0;netstandard2.1</TargetFrameworks>
 		<TargetFrameworks Condition="'$(LibraryFrameworks)'!=''">$(LibraryFrameworks)</TargetFrameworks>
 		<Nullable>enable</Nullable>
-		<Version>1.0.4</Version>
+		<Version>1.0.5</Version>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<RootNamespace>CTCBeamDecoder</RootNamespace>
 		<PackageId>CTCBeamDecoder</PackageId>
@@ -26,7 +26,7 @@
 		<RepositoryUrl>https://github.com/aleksandr-aleksashin/ctcdecode-csharp</RepositoryUrl>
 		<NeutralLanguage>en-US</NeutralLanguage>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<RuntimeIdentifiers>win-x64;linux-x64;linux-musl-x64</RuntimeIdentifiers>
+		<RuntimeIdentifiers>win-x64;linux-x64;linux-musl-x64;linux-arm64;</RuntimeIdentifiers>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -38,8 +38,9 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	    <Content CopyToOutputDirectory="PreserveNewest" Include="NativeCTCBeamDecoder.dll" Link="NativeCTCBeamDecoder.dll" Pack="true" PackagePath="runtimes/win-x64/native/NativeCTCBeamDecoder.dll" />
-		<Content CopyToOutputDirectory="PreserveNewest" Include="NativeCTCBeamDecoder.so" Link="NativeCTCBeamDecoder.so" Pack="true" PackagePath="runtimes/linux-x64/native/NativeCTCBeamDecoder.so" />
+	    <Content CopyToOutputDirectory="PreserveNewest" Include="lib/win-x64/NativeCTCBeamDecoder.dll" Link="lib/win-x64/NativeCTCBeamDecoder.dll" Pack="true" PackagePath="runtimes/win-x64/native/NativeCTCBeamDecoder.dll" />
+		<Content CopyToOutputDirectory="PreserveNewest" Include="lib/win-x64/NativeCTCBeamDecoder.so" Link="lib/win-x64/NativeCTCBeamDecoder.so" Pack="true" PackagePath="runtimes/linux-x64/native/NativeCTCBeamDecoder.so" />
+		<Content CopyToOutputDirectory="PreserveNewest" Include="lib/linux-arm64/NativeCTCBeamDecoder.so" Link="lib/linux-arm64/NativeCTCBeamDecoder.so" Pack="true" PackagePath="runtimes/linux-x64/native/NativeCTCBeamDecoder.so" />
 	</ItemGroup>
 	<ItemGroup>
 		<None Update="LICENSE">
