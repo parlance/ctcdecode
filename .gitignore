@@ -118,8 +118,10 @@ ENV/
 *.so
 *.dylib
 *.dll
-!/CTCBeamDecoder/CTCBeamDecoder/NativeCTCBeamDecoder.dll
-!/CTCBeamDecoder/CTCBeamDecoder/NativeCTCBeamDecoder.so
+!/CTCBeamDecoder/CTCBeamDecoder/lib/
+!/CTCBeamDecoder/CTCBeamDecoder/lib/win-x64/NativeCTCBeamDecoder.dll
+!/CTCBeamDecoder/CTCBeamDecoder/lib/linux-arm64/NativeCTCBeamDecoder.so
+!/CTCBeamDecoder/CTCBeamDecoder/lib/linux-x64/NativeCTCBeamDecoder.so
 # Fortran module files
 *.mod
 *.smod
