@@ -38,9 +38,9 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	    <Content CopyToOutputDirectory="PreserveNewest" Include="lib/win-x64/NativeCTCBeamDecoder.dll" Link="lib/win-x64/NativeCTCBeamDecoder.dll" Pack="true" PackagePath="runtimes/win-x64/native/NativeCTCBeamDecoder.dll" />
-		<Content CopyToOutputDirectory="PreserveNewest" Include="lib/win-x64/NativeCTCBeamDecoder.so" Link="lib/win-x64/NativeCTCBeamDecoder.so" Pack="true" PackagePath="runtimes/linux-x64/native/NativeCTCBeamDecoder.so" />
-		<Content CopyToOutputDirectory="PreserveNewest" Include="lib/linux-arm64/NativeCTCBeamDecoder.so" Link="lib/linux-arm64/NativeCTCBeamDecoder.so" Pack="true" PackagePath="runtimes/linux-x64/native/NativeCTCBeamDecoder.so" />
+	    <Content CopyToOutputDirectory="PreserveNewest" Include="lib/win-x64/NativeCTCBeamDecoder.dll" Link="NativeCTCBeamDecoder.dll" Pack="true" PackagePath="runtimes/win-x64/native/NativeCTCBeamDecoder.dll" />
+		<Content CopyToOutputDirectory="PreserveNewest" Include="lib/linux-x64/NativeCTCBeamDecoder.so" Link="NativeCTCBeamDecoder.so" Pack="true" PackagePath="runtimes/linux-x64/native/NativeCTCBeamDecoder.so" />
+		<Content CopyToOutputDirectory="PreserveNewest" Include="lib/linux-arm64/NativeCTCBeamDecoder.so" Link="NativeCTCBeamDecoder.so" Pack="true" PackagePath="runtimes/linux-x64/native/NativeCTCBeamDecoder.so" />
 	</ItemGroup>
 	<ItemGroup>
 		<None Update="LICENSE">
