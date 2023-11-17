@@ -271,7 +271,13 @@ void Scorer::load_lexicon(bool add_space, const std::string& lexicon_fst_path)
          */
         fst::Minimize(new_lexicon);
         this->lexicon = new_lexicon;
+
     } else {
         load_lexicon_from_fst_file(lexicon_fst_path);
+    }
+
+    if (lexicon.NumStates() == 0) {
+        std::cout << "Lexicon is empty" << std::endl;
+        has_lexicon_ = false;
     }
 }

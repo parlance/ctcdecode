@@ -1,7 +1,7 @@
 
 \data\
-ngram 1=37
-ngram 2=47
+ngram 1=39
+ngram 2=52
 ngram 3=11
 ngram 4=6
 ngram 5=4
@@ -44,6 +44,8 @@ ngram 5=4
 -3.141592	foo
 -2.718281	bar	3.0
 -6.535897	baz	-0.0
+-1.687872	bugs	-0.30103
+-1.687872	bunny	-0.30103
 
 \2-grams:
 -0.6925742	, .
@@ -93,6 +95,12 @@ ngram 5=4
 -15	<unk> <unk>	-2
 -4	<unk> however	-1
 -6	foo bar
+-0.2922095	bunny </s>
+-10	bugs </s>
+-0.2922095	<s> bugs
+-10	<s> bunny
+-0.2922095	bugs bunny
+
 
 \3-grams:
 -0.01916512	more . </s>

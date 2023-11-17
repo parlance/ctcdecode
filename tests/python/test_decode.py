@@ -139,7 +139,9 @@ class TestDecoders(unittest.TestCase):
             blank_id=self.vocab_list.index("_"),
         )
         beam_result, beam_scores, timesteps, out_seq_len = decoder.decode(probs_seq)
-        output_str = self.convert_to_string(beam_result[0][0], self.vocab_list, out_seq_len[0][0])
+        output_str = self.convert_to_string(
+            beam_result[0][0], self.vocab_list, out_seq_len[0][0]
+        )
         self.assertEqual(output_str, self.beam_search_result[0])
 
     def test_beam_search_decoder_2(self):
@@ -150,7 +152,9 @@ class TestDecoders(unittest.TestCase):
             blank_id=self.vocab_list.index("_"),
         )
         beam_result, beam_scores, timesteps, out_seq_len = decoder.decode(probs_seq)
-        output_str = self.convert_to_string(beam_result[0][0], self.vocab_list, out_seq_len[0][0])
+        output_str = self.convert_to_string(
+            beam_result[0][0], self.vocab_list, out_seq_len[0][0]
+        )
         self.assertEqual(output_str, self.beam_search_result[1])
 
     def test_beam_search_decoder_3(self):
@@ -164,7 +168,9 @@ class TestDecoders(unittest.TestCase):
             model_path=lm_path,
         )
         beam_result, beam_scores, timesteps, out_seq_len = decoder.decode(probs_seq)
-        output_str = self.convert_to_string(beam_result[0][0], self.vocab_list, out_seq_len[0][0])
+        output_str = self.convert_to_string(
+            beam_result[0][0], self.vocab_list, out_seq_len[0][0]
+        )
         self.assertEqual(output_str, self.beam_search_result[2])
 
     def test_beam_search_decoder_batch(self):
@@ -176,8 +182,12 @@ class TestDecoders(unittest.TestCase):
             num_processes=24,
         )
         beam_results, beam_scores, timesteps, out_seq_len = decoder.decode(probs_seq)
-        output_str1 = self.convert_to_string(beam_results[0][0], self.vocab_list, out_seq_len[0][0])
-        output_str2 = self.convert_to_string(beam_results[1][0], self.vocab_list, out_seq_len[1][0])
+        output_str1 = self.convert_to_string(
+            beam_results[0][0], self.vocab_list, out_seq_len[0][0]
+        )
+        output_str2 = self.convert_to_string(
+            beam_results[1][0], self.vocab_list, out_seq_len[1][0]
+        )
         self.assertEqual(output_str1, self.beam_search_result[0])
         self.assertEqual(output_str2, self.beam_search_result[1])
         del decoder
@@ -192,8 +202,12 @@ class TestDecoders(unittest.TestCase):
             num_processes=24,
         )
         beam_results, beam_scores, timesteps, out_seq_len = decoder.decode(probs_seq)
-        output_str1 = self.convert_to_string(beam_results[0][0], self.vocab_list, out_seq_len[0][0])
-        output_str2 = self.convert_to_string(beam_results[1][0], self.vocab_list, out_seq_len[1][0])
+        output_str1 = self.convert_to_string(
+            beam_results[0][0], self.vocab_list, out_seq_len[0][0]
+        )
+        output_str2 = self.convert_to_string(
+            beam_results[1][0], self.vocab_list, out_seq_len[1][0]
+        )
         self.assertEqual(output_str1, self.beam_search_result[0])
         self.assertEqual(output_str2, self.beam_search_result[1])
 
@@ -217,8 +231,12 @@ class TestDecoders(unittest.TestCase):
         beam_results, beam_scores, timesteps, out_seq_len = decoder.decode(
             probs_seq, [state1, state2], is_eos_s
         )
-        output_str1 = self.convert_to_string(beam_results[0][0], self.vocab_list, out_seq_len[0][0])
-        output_str2 = self.convert_to_string(beam_results[1][0], self.vocab_list, out_seq_len[1][0])
+        output_str1 = self.convert_to_string(
+            beam_results[0][0], self.vocab_list, out_seq_len[0][0]
+        )
+        output_str2 = self.convert_to_string(
+            beam_results[1][0], self.vocab_list, out_seq_len[1][0]
+        )
 
         self.assertEqual(output_str1, self.beam_search_result[2])
         self.assertEqual(output_str2, self.beam_search_result[2])
@@ -241,8 +259,12 @@ class TestDecoders(unittest.TestCase):
         beam_results, beam_scores, timesteps, out_seq_len = decoder.decode(
             probs_seq, [state1, state2], is_eos_s
         )
-        output_str1 = self.convert_to_string(beam_results[0][0], self.vocab_list, out_seq_len[0][0])
-        output_str2 = self.convert_to_string(beam_results[1][0], self.vocab_list, out_seq_len[1][0])
+        output_str1 = self.convert_to_string(
+            beam_results[0][0], self.vocab_list, out_seq_len[0][0]
+        )
+        output_str2 = self.convert_to_string(
+            beam_results[1][0], self.vocab_list, out_seq_len[1][0]
+        )
 
         self.assertEqual(output_str1, self.beam_search_result[0])
         self.assertEqual(output_str2, self.beam_search_result[1])
@@ -268,7 +290,9 @@ class TestDecoders(unittest.TestCase):
             probs_seq[:, 2:], [state1], [True]
         )
 
-        output_str1 = self.convert_to_string(beam_results[0][0], self.vocab_list, out_seq_len[0][0])
+        output_str1 = self.convert_to_string(
+            beam_results[0][0], self.vocab_list, out_seq_len[0][0]
+        )
         self.assertEqual(output_str1, self.beam_search_result[2])
 
     def test_online_decoder_decoding_with_two_calls_no_lm(self):
@@ -293,8 +317,12 @@ class TestDecoders(unittest.TestCase):
 
         del state1, state2
         size = beam_results.shape
-        output_str1 = self.convert_to_string(beam_results[0][0], self.vocab_list, out_seq_len[0][0])
-        output_str2 = self.convert_to_string(beam_results[1][0], self.vocab_list, out_seq_len[1][0])
+        output_str1 = self.convert_to_string(
+            beam_results[0][0], self.vocab_list, out_seq_len[0][0]
+        )
+        output_str2 = self.convert_to_string(
+            beam_results[1][0], self.vocab_list, out_seq_len[1][0]
+        )
 
         self.assertEqual(output_str1, self.beam_search_result[0])
         self.assertEqual(output_str2, self.beam_search_result[1])
@@ -349,7 +377,8 @@ class TestDecoders(unittest.TestCase):
         # make mixed version that can get fixed with LM
         TEST_PROBS = torch.vstack(
             [
-                torch.vstack([BUGS_PROBS, BLANK_PROBS, BLANK_PROBS]) * 0.51 + BUNNY_PROBS * 0.49,
+                torch.vstack([BUGS_PROBS, BLANK_PROBS, BLANK_PROBS]) * 0.51
+                + BUNNY_PROBS * 0.49,
                 SPACE_PROBS,
                 BUNNY_PROBS,
             ]
@@ -357,8 +386,12 @@ class TestDecoders(unittest.TestCase):
 
         # without lm and without hotwords
         decoder = ctcdecode.CTCBeamDecoder(SAMPLE_LABELS, blank_id=7, beam_width=100)
-        beam_result, _, _, out_seq_len = decoder.decode(torch.unsqueeze(TEST_PROBS, dim=0))
-        output_str = self.convert_to_string(beam_result[0][0], SAMPLE_LABELS, out_seq_len[0][0])
+        beam_result, _, _, out_seq_len = decoder.decode(
+            torch.unsqueeze(TEST_PROBS, dim=0)
+        )
+        output_str = self.convert_to_string(
+            beam_result[0][0], SAMPLE_LABELS, out_seq_len[0][0]
+        )
         self.assertEqual(output_str, "bugs bunny")
 
         # without lm and with hotwords
@@ -367,7 +400,9 @@ class TestDecoders(unittest.TestCase):
             hotwords=[["b", "u", "n", "n", "y"]],
             hotword_weight=10,
         )
-        output_str = self.convert_to_string(beam_result[0][0], SAMPLE_LABELS, out_seq_len[0][0])
+        output_str = self.convert_to_string(
+            beam_result[0][0], SAMPLE_LABELS, out_seq_len[0][0]
+        )
         self.assertEqual(output_str, "bunny bunny")
 
         lm_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test.arpa")
@@ -382,12 +417,15 @@ class TestDecoders(unittest.TestCase):
             hotwords=[["b", "u", "n", "n", "y"]],
             hotword_weight=10,
         )
-        output_str = self.convert_to_string(beam_result[0][0], SAMPLE_LABELS, out_seq_len[0][0])
+        output_str = self.convert_to_string(
+            beam_result[0][0], SAMPLE_LABELS, out_seq_len[0][0]
+        )
         self.assertEqual(output_str, "bunny bunny")
 
         TEST_PROBS = torch.vstack(
             [
-                torch.vstack([BUGS_PROBS, BLANK_PROBS, BLANK_PROBS]) * 0.51 + BUNNY_PROBS * 0.49,
+                torch.vstack([BUGS_PROBS, BLANK_PROBS, BLANK_PROBS]) * 0.51
+                + BUNNY_PROBS * 0.49,
                 SPACE_PROBS,
                 BUNNY_PROBS,
             ]
@@ -398,7 +436,9 @@ class TestDecoders(unittest.TestCase):
             hotwords=[["b", "u", "g", "s"]],
             hotword_weight=10,
         )
-        output_str = self.convert_to_string(beam_result[0][0], SAMPLE_LABELS, out_seq_len[0][0])
+        output_str = self.convert_to_string(
+            beam_result[0][0], SAMPLE_LABELS, out_seq_len[0][0]
+        )
         self.assertEqual(output_str, "bugs bunny")
 
         # hotword as a phrase
@@ -407,7 +447,9 @@ class TestDecoders(unittest.TestCase):
             hotwords=[list("bunny bunny")],
             hotword_weight=10,
         )
-        output_str = self.convert_to_string(beam_result[0][0], SAMPLE_LABELS, out_seq_len[0][0])
+        output_str = self.convert_to_string(
+            beam_result[0][0], SAMPLE_LABELS, out_seq_len[0][0]
+        )
         self.assertEqual(output_str, "bunny bunny")
 
     def test_hotwords_with_small_input(self):
@@ -424,33 +466,49 @@ class TestDecoders(unittest.TestCase):
         # without hotword
         decoder = ctcdecode.CTCBeamDecoder(labels, blank_id=0, beam_width=100)
         beam_result, _, _, out_seq_len = decoder.decode(probs)
-        output_str = self.convert_to_string(beam_result[0][0], labels, out_seq_len[0][0])
+        output_str = self.convert_to_string(
+            beam_result[0][0], labels, out_seq_len[0][0]
+        )
         self.assertEqual(output_str, "a b")
 
         # with hotword a
-        beam_result, _, _, out_seq_len = decoder.decode(probs, hotwords=[["a"]], hotword_weight=10)
-        output_str = self.convert_to_string(beam_result[0][0], labels, out_seq_len[0][0])
+        beam_result, _, _, out_seq_len = decoder.decode(
+            probs, hotwords=[["a"]], hotword_weight=10
+        )
+        output_str = self.convert_to_string(
+            beam_result[0][0], labels, out_seq_len[0][0]
+        )
         self.assertEqual(output_str, "a a")
 
         # with hotword b
-        beam_result, _, _, out_seq_len = decoder.decode(probs, hotwords=[["b"]], hotword_weight=10)
-        output_str = self.convert_to_string(beam_result[0][0], labels, out_seq_len[0][0])
+        beam_result, _, _, out_seq_len = decoder.decode(
+            probs, hotwords=[["b"]], hotword_weight=10
+        )
+        output_str = self.convert_to_string(
+            beam_result[0][0], labels, out_seq_len[0][0]
+        )
         self.assertEqual(output_str, "b b")
 
         # with hotword "b b"
         beam_result, _, _, out_seq_len = decoder.decode(
             probs, hotwords=[list("b b")], hotword_weight=10
         )
-        output_str = self.convert_to_string(beam_result[0][0], labels, out_seq_len[0][0])
+        output_str = self.convert_to_string(
+            beam_result[0][0], labels, out_seq_len[0][0]
+        )
         self.assertEqual(output_str, "b b")
 
         # test for passing hotword scorer to decoder call with hotword "b b"
-        hotword_scorer = decoder.create_hotword_scorer(hotwords=[list("b b")], hotword_weight=10)
+        hotword_scorer = decoder.create_hotword_scorer(
+            hotwords=[list("b b")], hotword_weight=10
+        )
         beam_result, _, _, out_seq_len = decoder.decode(
             probs,
             hotword_scorer=hotword_scorer,
         )
-        output_str = self.convert_to_string(beam_result[0][0], labels, out_seq_len[0][0])
+        output_str = self.convert_to_string(
+            beam_result[0][0], labels, out_seq_len[0][0]
+        )
         decoder.delete_hotword_scorer(hotword_scorer)
         self.assertEqual(output_str, "b b")
 
