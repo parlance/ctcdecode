@@ -245,15 +245,6 @@ void DecoderState::next(const std::vector<std::vector<double>>& probs_seq)
                     }
                     // unknown scoring
                     else {
-
-                        // reset the hotword parameters of the new node
-                        if (hotword_scorer != nullptr) {
-                            new_path->reset_hotword_params();
-                            if (prefix->is_hotpath()) {
-                                reset_score = true;
-                            }
-                        }
-
                         // check if the current node forms OOV word and add unk score
                         if (options->is_bpe_based && ext_scorer != nullptr
                             && ext_scorer->has_lexicon()) {
