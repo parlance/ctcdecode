@@ -47,7 +47,6 @@ if [ ! -d "$BUILD_DIR" ]; then
     mkdir "$BUILD_DIR"
 fi
 
-pip install . 
 cd build
 cmake ..
 make
