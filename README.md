@@ -17,6 +17,11 @@ git clone --recursive https://github.com/parlance/ctcdecode.git
 cd ctcdecode && pip install .
 ```
 
+To build ctcdecode library,
+```bash
+bash build.sh
+```
+
 ## How to Use
 
 ```python

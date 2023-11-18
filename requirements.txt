@@ -1,1 +1,5 @@
 torch
+black
+isort
+clang-format
+pytest

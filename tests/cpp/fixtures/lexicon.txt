@@ -1,0 +1,7 @@
+1 aalborg a ##al ##b ##or ##g
+1 aalesund a ##al ##es ##un ##d
+1 aalii a ##al ##i ##i
+1 aaliis a ##al ##i ##is
+1 aals a ##al ##s
+1 aalst a ##al ##st
+1 aalto a ##al ##t ##o
